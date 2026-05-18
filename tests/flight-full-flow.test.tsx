@@ -17,7 +17,7 @@ describe('Flight full flow', () => {
     render(<App />);
 
     await user.click(screen.getByText('Book a flight'));
-    await user.click(screen.getByText('25 min'));
+    await user.click(screen.getByText('25m'));
     await user.click(screen.getByText('일'));
 
     // New: origin + destination dropdowns
