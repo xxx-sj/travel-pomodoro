@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { geoEquirectangular, geoPath, type GeoProjection } from 'd3-geo';
+import { geoEquirectangular, geoPath, geoInterpolate, type GeoProjection } from 'd3-geo';
 import { feature } from 'topojson-client';
 import type { FeatureCollection, Geometry } from 'geojson';
 import type { Topology } from 'topojson-specification';
@@ -116,22 +116,40 @@ export default function WorldMap({
   let pathD = '';
   let planePos: [number, number] = [0, 0];
   let planeAngle = 0;
-  if (o && d) {
-    const midX = (o[0] + d[0]) / 2;
-    // Arc above; lift scales with horizontal distance.
-    const arcLift = Math.min(180, Math.abs(d[0] - o[0]) * 0.25 + 40);
-    const midY = (o[1] + d[1]) / 2 - arcLift;
-    pathD = `M ${o[0]},${o[1]} Q ${midX},${midY} ${d[0]},${d[1]}`;
+  if (origin && destination && o && d) {
+    // True great-circle path: sample ~48 points along the geodesic between
+    // origin and destination, project each to screen space, and draw as a
+    // polyline. This gives the natural curve you see in airline route maps
+    // and works correctly for north-south, east-west, and polar routes.
+    const interp = geoInterpolate(
+      [origin.lng, origin.lat],
+      [destination.lng, destination.lat],
+    );
+    const samples = 48;
+    const pts: Array<[number, number]> = [];
+    for (let i = 0; i <= samples; i++) {
+      const t = i / samples;
+      const [lng, lat] = interp(t);
+      pts.push(projectLatLng(lng, lat));
+    }
+    pathD = pts
+      .map((p, i) => `${i === 0 ? 'M' : 'L'} ${p[0]},${p[1]}`)
+      .join(' ');
 
-    const t = Math.max(0, Math.min(1, progress));
-    const x = (1 - t) ** 2 * o[0] + 2 * (1 - t) * t * midX + t ** 2 * d[0];
-    const y = (1 - t) ** 2 * o[1] + 2 * (1 - t) * t * midY + t ** 2 * d[1];
-    planePos = [x, y];
+    // Plane position along the great-circle at current progress.
+    const tp = Math.max(0, Math.min(1, progress));
+    const [pLng, pLat] = interp(tp);
+    planePos = projectLatLng(pLng, pLat);
 
-    // Tangent for rotation
-    const dx = 2 * (1 - t) * (midX - o[0]) + 2 * t * (d[0] - midX);
-    const dy = 2 * (1 - t) * (midY - o[1]) + 2 * t * (d[1] - midY);
-    planeAngle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    // Tangent angle: project a tiny step ahead (or behind near the end) to
+    // figure out which way the plane should face.
+    const tAhead = Math.min(1, tp + 0.005);
+    const tBehind = Math.max(0, tp - 0.005);
+    const [aLng, aLat] = interp(tAhead);
+    const [bLng, bLat] = interp(tBehind);
+    const ahead = projectLatLng(aLng, aLat);
+    const behind = projectLatLng(bLng, bLat);
+    planeAngle = (Math.atan2(ahead[1] - behind[1], ahead[0] - behind[0]) * 180) / Math.PI;
   }
 
   return (
