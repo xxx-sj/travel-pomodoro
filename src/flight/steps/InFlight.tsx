@@ -24,6 +24,7 @@ export default function InFlight() {
   const setShowMusicVideo = useSettingsStore((s) => s.setShowMusicVideo);
   const [, setTick] = useState(0);
   const [showSoundPanel, setShowSoundPanel] = useState(false);
+  const [showYtPanel, setShowYtPanel] = useState(false);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
 
@@ -173,33 +174,45 @@ export default function InFlight() {
                 />
               </div>
 
-              {/* YouTube URL switch — change track mid-flight */}
-              <div className="pt-2 border-t border-white/15">
-                <div className="text-[11px] opacity-70 mb-1">📺 YouTube URL 변경</div>
-                <div className="flex gap-1.5">
-                  <input
-                    type="url"
-                    placeholder="https://youtu.be/..."
-                    value={ytInput}
-                    onChange={(e) => { setYtInput(e.target.value); setYtErr(''); }}
-                    className="flex-1 px-2 py-1 text-[11px] bg-white/10 border border-white/20 rounded text-white placeholder:text-white/40"
-                  />
-                  <button
-                    onClick={applyYouTubeFromPanel}
-                    className="px-3 py-1 text-[11px] bg-orange-500/80 hover:bg-orange-500 rounded"
-                  >
-                    Set
-                  </button>
-                </div>
-                {ytErr && <p className="text-[10px] text-red-300 mt-1">{ytErr}</p>}
-                {isYouTubeTrack(active.lofiTrack) && (
-                  <p className="text-[10px] text-emerald-300/90 mt-1">현재: {youtubeIdFromTrack(active.lofiTrack)}</p>
-                )}
-              </div>
+            </div>
+          )}
+        </div>
 
-              {/* Show video toggle — only meaningful for YouTube */}
+        {/* Separate YouTube pill */}
+        <div className="relative">
+          <button
+            onClick={() => setShowYtPanel((v) => !v)}
+            aria-label="YouTube"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm hover:bg-white/15"
+          >
+            <span className="text-base leading-none">📺</span>
+            <span className="hidden sm:inline">YouTube</span>
+          </button>
+          {showYtPanel && (
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-80 bg-black/85 backdrop-blur border border-white/20 rounded-xl p-4 space-y-3 text-white text-xs shadow-2xl">
+              <div className="text-[11px] opacity-70">YouTube URL 변경</div>
+              <div className="flex gap-1.5">
+                <input
+                  type="url"
+                  placeholder="https://youtu.be/..."
+                  value={ytInput}
+                  onChange={(e) => { setYtInput(e.target.value); setYtErr(''); }}
+                  className="flex-1 px-2 py-1.5 text-[11px] bg-white/10 border border-white/20 rounded text-white placeholder:text-white/40"
+                />
+                <button
+                  onClick={applyYouTubeFromPanel}
+                  className="px-3 py-1.5 text-[11px] bg-orange-500/80 hover:bg-orange-500 rounded"
+                >
+                  Set
+                </button>
+              </div>
+              {ytErr && <p className="text-[10px] text-red-300">{ytErr}</p>}
               {isYouTubeTrack(active.lofiTrack) && (
-                <label className="flex items-center gap-2 cursor-pointer pt-1">
+                <p className="text-[10px] text-emerald-300/90">현재: {youtubeIdFromTrack(active.lofiTrack)}</p>
+              )}
+
+              {isYouTubeTrack(active.lofiTrack) && (
+                <label className="flex items-center gap-2 cursor-pointer pt-2 border-t border-white/15">
                   <input
                     type="checkbox"
                     checked={showVideo}
