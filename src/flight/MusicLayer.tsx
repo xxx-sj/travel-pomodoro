@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { useFlightStore } from '../store/flightStore';
 import { useSettingsStore } from '../store/settingsStore';
 import { audioBus } from '../lib/audio';
@@ -15,19 +16,8 @@ const hiddenStyle: React.CSSProperties = {
   pointerEvents: 'none',
 };
 
-const visibleVideoStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: '50%',
-  left: 16,
-  transform: 'translateY(-50%)',
-  width: 320,
-  height: 180,
-  borderRadius: 12,
-  overflow: 'hidden',
-  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
-  zIndex: 60,
-  border: '1px solid rgba(255,255,255,0.2)',
-};
+const VIDEO_W = 320;
+const VIDEO_H = 180;
 
 // Volume control for the YouTube iframe uses postMessage to the embedded
 // player. Requires `enablejsapi=1` in the iframe URL.
@@ -127,31 +117,76 @@ export default function MusicLayer() {
         />
       )}
       {ytId && (
-        <div style={showVideo ? visibleVideoStyle : hiddenStyle}>
-          <iframe
-            key={ytId}
-            ref={iframeRef}
-            // enablejsapi=1 lets us drive the player via postMessage. `start`
-            // is honored by the embed and seeks forward by elapsed seconds so
-            // the music doesn't restart on refresh.
-            src={`https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&enablejsapi=1${startAtSeconds > 0 ? `&start=${startAtSeconds}` : ''}`}
-            title="In-flight music"
-            allow="autoplay; encrypted-media"
-            referrerPolicy="strict-origin-when-cross-origin"
-            onLoad={() => {
-              const iframe = iframeRef.current;
-              if (!iframe) return;
-              sendYouTubeCommand(iframe, 'addEventListener', ['onReady']);
-              sendYouTubeCommand(iframe, 'setVolume', [Math.round(musicVolume * 100)]);
-              // Belt-and-suspenders: also seek via API in case `start=` was
-              // ignored (some embeds don't honor it for live streams).
-              if (startAtSeconds > 0) {
-                sendYouTubeCommand(iframe, 'seekTo', [startAtSeconds, true]);
-              }
+        showVideo ? (
+          // Draggable mini player — Framer Motion drag on the wrapper, iframe
+          // has pointer-events:none so the entire surface acts as a drag handle.
+          <motion.div
+            drag
+            dragMomentum={false}
+            dragElastic={0.05}
+            initial={{ y: '-50%' }}
+            style={{
+              position: 'fixed',
+              top: '50%',
+              left: 16,
+              width: VIDEO_W,
+              height: VIDEO_H + 22,
+              borderRadius: 12,
+              overflow: 'hidden',
+              boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              zIndex: 60,
+              border: '1px solid rgba(255,255,255,0.2)',
+              background: 'rgba(0,0,0,0.85)',
+              cursor: 'grab',
+              touchAction: 'none',
             }}
-            style={{ width: '100%', height: '100%', border: 0 }}
-          />
-        </div>
+            whileDrag={{ cursor: 'grabbing' }}
+          >
+            <div className="text-[10px] text-white/60 px-2 py-1 select-none border-b border-white/10">
+              ⠿ 드래그하여 이동
+            </div>
+            <iframe
+              key={ytId}
+              ref={iframeRef}
+              src={`https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&enablejsapi=1${startAtSeconds > 0 ? `&start=${startAtSeconds}` : ''}`}
+              title="비행 중 음악"
+              allow="autoplay; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              onLoad={() => {
+                const iframe = iframeRef.current;
+                if (!iframe) return;
+                sendYouTubeCommand(iframe, 'addEventListener', ['onReady']);
+                sendYouTubeCommand(iframe, 'setVolume', [Math.round(musicVolume * 100)]);
+                if (startAtSeconds > 0) {
+                  sendYouTubeCommand(iframe, 'seekTo', [startAtSeconds, true]);
+                }
+              }}
+              // Disable pointer events so the wrapper captures drag gestures.
+              style={{ width: '100%', height: VIDEO_H, border: 0, pointerEvents: 'none' }}
+            />
+          </motion.div>
+        ) : (
+          <div style={hiddenStyle}>
+            <iframe
+              key={ytId}
+              ref={iframeRef}
+              src={`https://www.youtube.com/embed/${ytId}?autoplay=1&loop=1&playlist=${ytId}&controls=0&modestbranding=1&rel=0&iv_load_policy=3&fs=0&enablejsapi=1${startAtSeconds > 0 ? `&start=${startAtSeconds}` : ''}`}
+              title="비행 중 음악"
+              allow="autoplay; encrypted-media"
+              referrerPolicy="strict-origin-when-cross-origin"
+              onLoad={() => {
+                const iframe = iframeRef.current;
+                if (!iframe) return;
+                sendYouTubeCommand(iframe, 'addEventListener', ['onReady']);
+                sendYouTubeCommand(iframe, 'setVolume', [Math.round(musicVolume * 100)]);
+                if (startAtSeconds > 0) {
+                  sendYouTubeCommand(iframe, 'seekTo', [startAtSeconds, true]);
+                }
+              }}
+              style={{ width: '100%', height: '100%', border: 0 }}
+            />
+          </div>
+        )
       )}
     </>
   );

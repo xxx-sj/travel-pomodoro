@@ -27,8 +27,8 @@ describe('Flight full flow', () => {
     await user.selectOptions(selects[0], 'KR');
     await user.selectOptions(selects[1], 'JP');
 
-    await user.click(screen.getByText(/Next: Boarding pass/));
-    await user.click(screen.getByText(/Proceed to check-in/));
+    await user.click(screen.getByText(/다음: 보딩패스/));
+    await user.click(screen.getByText(/체크인/));
 
     // bypass drag — directly call startFlight
     useFlightStore.getState().startFlight();

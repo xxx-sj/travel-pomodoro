@@ -14,16 +14,15 @@ describe('Resume flow', () => {
   it('shows resume modal when active exists on mount', async () => {
     saveActive({ step: 'inflight', flight: { id: 'x', startedAt: Date.now(), plannedSeconds: 1500, category: 'work', seat: '1A' } });
     render(<App />);
-    expect(await screen.findByText(/Resume your flight/)).toBeInTheDocument();
+    expect(await screen.findByText(/비행을 이어갈까요/)).toBeInTheDocument();
   });
 
   it('Discard clears active and auto-opens a fresh Booking', async () => {
     saveActive({ step: 'inflight', flight: { id: 'x', startedAt: Date.now(), plannedSeconds: 1500, category: 'work', seat: '1A' } });
     const user = userEvent.setup();
     render(<App />);
-    await user.click(await screen.findByText('Discard'));
-    // After discard, the "Book a flight" intro is gone — we jump straight to
-    // the Booking step's duration selector.
+    await user.click(await screen.findByText('삭제'));
+    // After discard, the intro screen is gone — we jump straight to Booking.
     expect(await screen.findByText('25m')).toBeInTheDocument();
   });
 
@@ -32,7 +31,7 @@ describe('Resume flow', () => {
     saveActive({ step: 'inflight', flight: { id: 'x', startedAt: past, plannedSeconds: 60, category: 'work', seat: '1A' } });
     const user = userEvent.setup();
     render(<App />);
-    await user.click(await screen.findByText('Resume'));
+    await user.click(await screen.findByText('이어가기'));
     expect(loadHistory().length).toBe(1);
   });
 });

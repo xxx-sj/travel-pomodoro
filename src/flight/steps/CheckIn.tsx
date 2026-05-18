@@ -61,7 +61,7 @@ export default function CheckIn() {
 
   return (
     <div className="max-w-xl mx-auto p-8 space-y-6">
-      <h2 className="text-2xl font-bold text-center">Tear stub to board</h2>
+      <h2 className="text-2xl font-bold text-center">탑승권을 떼어 비행 시작</h2>
       <div className="relative">
         <BoardingPassCard
           category={cat}
@@ -73,7 +73,7 @@ export default function CheckIn() {
         <motion.div
           role="button"
           tabIndex={0}
-          aria-label="Tear boarding pass to start your flight"
+          aria-label="탑승권을 떼어 비행 시작"
           drag="x"
           dragConstraints={{ left: 0, right: TEAR_THRESHOLD + 20 }}
           dragElastic={0.1}
@@ -81,13 +81,13 @@ export default function CheckIn() {
           onDragEnd={handleDragEnd}
           className="absolute top-0 right-0 bottom-0 w-[120px] bg-orange-400 rounded-r-xl cursor-grab active:cursor-grabbing">
           <div className="flex flex-col h-full items-center justify-center text-white font-mono text-[10px] tracking-widest">
-            ≫ TEAR ≫
+            ≫ 떼기 ≫
           </div>
         </motion.div>
       </div>
-      <p className="text-center text-xs text-slate-500">Drag the orange stub right — or hold Space</p>
+      <p className="text-center text-xs text-slate-500">주황색 부분을 오른쪽으로 드래그 — 또는 Space 길게 누르기</p>
       <div className="flex gap-3 justify-center">
-        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
+        <button onClick={abort} className="px-4 py-2 text-slate-500">취소</button>
       </div>
     </div>
   );

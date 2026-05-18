@@ -13,7 +13,7 @@ export default function BoardingPass() {
 
   return (
     <div className="max-w-xl mx-auto p-8 space-y-6">
-      <h2 className="text-2xl font-bold text-center">Your boarding pass</h2>
+      <h2 className="text-2xl font-bold text-center">보딩패스</h2>
       <motion.div
         initial={{ y: -100, opacity: 0, rotate: -3 }}
         animate={{ y: 0, opacity: 1, rotate: 0 }}
@@ -28,9 +28,9 @@ export default function BoardingPass() {
         />
       </motion.div>
       <div className="flex gap-3 justify-center">
-        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
+        <button onClick={abort} className="px-4 py-2 text-slate-500">취소</button>
         <button onClick={advance} className="bg-orange-500 text-white px-6 py-2 rounded-lg">
-          Proceed to check-in →
+          체크인 →
         </button>
       </div>
     </div>

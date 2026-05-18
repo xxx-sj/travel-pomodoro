@@ -23,9 +23,9 @@ export default function App() {
     <BrowserRouter>
       <MusicLayer />
       <nav className="p-4 bg-slate-900 text-white flex gap-4">
-        <Link to="/">Home</Link>
-        <Link to="/stats">Stats</Link>
-        <Link to="/settings">Settings</Link>
+        <Link to="/">홈</Link>
+        <Link to="/stats">통계</Link>
+        <Link to="/settings">설정</Link>
       </nav>
       <Routes>
         <Route path="/" element={<Home />} />

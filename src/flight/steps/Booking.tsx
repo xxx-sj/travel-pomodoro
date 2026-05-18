@@ -28,7 +28,7 @@ export default function Booking() {
   function applyYouTube() {
     const id = extractYouTubeId(ytUrl);
     if (!id) {
-      setYtError('YouTube URL 확인 필요');
+      setYtError('YouTube URL을 확인해주세요');
       return;
     }
     setYtError('');
@@ -37,7 +37,7 @@ export default function Booking() {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-4">
-      <h2 className="text-xl font-bold mb-3">Book your flight</h2>
+      <h2 className="text-xl font-bold mb-3">새 비행 예약</h2>
 
       {/* Two-column grid: left = time/category/route; right = music */}
       <div className="grid lg:grid-cols-2 gap-x-6 gap-y-3">
@@ -45,7 +45,7 @@ export default function Booking() {
         <div className="space-y-3">
           {/* Duration */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Duration</h3>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">시간</h3>
             <div className="flex flex-wrap gap-1.5">
               {DURATIONS.map((d) => (
                 <button key={d} onClick={() => setDuration(d)}
@@ -53,7 +53,7 @@ export default function Booking() {
                   {d}m
                 </button>
               ))}
-              <input type="number" min={1} max={300} placeholder="custom"
+              <input type="number" min={1} max={300} placeholder="직접 입력"
                 value={custom}
                 onChange={(e) => setCustom(e.target.value)}
                 onBlur={() => { const n = parseInt(custom); if (n > 0) setDuration(n); }}
@@ -64,19 +64,19 @@ export default function Booking() {
           {/* Route */}
           <section>
             <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">
-              Route <span className="text-red-500 normal-case">*필수</span>
+              비행 경로 <span className="text-red-500 normal-case">*필수</span>
             </h3>
             <div className="grid grid-cols-2 gap-2">
               <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
                 className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${origin ? 'border-emerald-500' : 'border-red-300'}`}>
-                <option value="">━ From ━</option>
+                <option value="">━ 출발지 ━</option>
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
                 ))}
               </select>
               <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
                 className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${destination ? 'border-emerald-500' : 'border-red-300'}`}>
-                <option value="">━ To ━</option>
+                <option value="">━ 목적지 ━</option>
                 {COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
                 ))}
@@ -94,7 +94,7 @@ export default function Booking() {
 
           {/* Category */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Category</h3>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">카테고리</h3>
             <div className="flex flex-wrap gap-1.5">
               {settings.categories.map((c) => (
                 <button key={c.id} onClick={() => setCategory(c.id)}
@@ -111,11 +111,11 @@ export default function Booking() {
         <div className="space-y-3">
           {/* Music tracks */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">In-flight music (optional)</h3>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">비행 중 음악 (선택)</h3>
             <div className="grid grid-cols-2 gap-1.5">
               <button onClick={() => setLofiTrack(null)}
                 className={`px-3 py-2 rounded-md border text-left text-xs ${selectedTrack === null ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300 bg-white'}`}>
-                <div className="font-semibold">🔇 None</div>
+                <div className="font-semibold">🔇 없음</div>
                 <div className="opacity-70 text-[10px]">엔진 소리만</div>
               </button>
               {LOFI_TRACKS.map((t) => (
@@ -130,7 +130,7 @@ export default function Booking() {
 
           {/* YouTube */}
           <section>
-            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">📺 YouTube URL (optional)</h3>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">📺 YouTube URL (선택)</h3>
             <div className="flex gap-1.5">
               <input
                 type="url"
@@ -140,7 +140,7 @@ export default function Booking() {
                 className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md bg-white"
               />
               <button onClick={applyYouTube} className="bg-orange-500 text-white px-3 py-1.5 text-sm rounded-md">
-                Set
+                적용
               </button>
             </div>
             {ytError && <p className="text-[11px] text-red-500 mt-1">{ytError}</p>}
@@ -168,10 +168,10 @@ export default function Booking() {
           )}
         </div>
         <div className="flex gap-2">
-          <button onClick={abort} className="px-3 py-1.5 text-sm text-slate-500">Cancel</button>
+          <button onClick={abort} className="px-3 py-1.5 text-sm text-slate-500">취소</button>
           <button onClick={advance} disabled={!canProceed}
             className="bg-orange-500 text-white px-4 py-1.5 text-sm rounded-md disabled:opacity-40">
-            Next: Boarding pass →
+            다음: 보딩패스 →
           </button>
         </div>
       </div>

@@ -31,12 +31,17 @@ export default function InFlight() {
   function applyYouTubeFromPanel() {
     const id = extractYouTubeId(ytInput);
     if (!id) {
-      setYtErr('URL 확인 필요');
+      setYtErr('URL을 확인해주세요');
       return;
     }
     setYtErr('');
     setLofiTrack(`${YT_PREFIX}${id}`);
     setYtInput('');
+  }
+
+  function closeAllPanels() {
+    setShowSoundPanel(false);
+    setShowYtPanel(false);
   }
 
   useEffect(() => {
@@ -78,13 +83,13 @@ export default function InFlight() {
     audioBus.play('captain_landing');
     setTimeout(() => audioBus.play('landing'), 5500);
     if (useSettingsStore.getState().settings.notificationsEnabled) {
-      notify('Flight landed', 'Your focus session is complete.');
+      notify('비행 도착', '집중 세션이 완료되었어요.');
     }
     land();
   }
 
   function handleAbort() {
-    if (confirm('Abort flight?')) {
+    if (confirm('비행을 중단할까요?')) {
       audioBus.stop('engine');
       abort();
     }
@@ -110,25 +115,34 @@ export default function InFlight() {
           onExpire={handleExpire}
         />
         <div className="text-white/70 text-sm tracking-widest font-mono">
-          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `Seat ${active.flight.seat}`} · {active.flight.plannedSeconds / 60} MIN
+          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `좌석 ${active.flight.seat}`} · {active.flight.plannedSeconds / 60}분
         </div>
         {track && (
           <div className="text-white/50 text-xs tracking-widest font-mono">
-            ♪ Now playing: {track.label}
+            ♪ 재생 중: {track.label}
           </div>
         )}
       </div>
 
+      {/* Backdrop — closes any open popup when user clicks the map area */}
+      {(showSoundPanel || showYtPanel) && (
+        <div
+          className="absolute inset-0 z-[5]"
+          onClick={closeAllPanels}
+          aria-hidden
+        />
+      )}
+
       {/* Bottom control bar — sound panel + abort, easy to see + reach */}
-      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3">
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex items-center gap-3">
         <div className="relative">
           <button
-            onClick={() => setShowSoundPanel((v) => !v)}
-            aria-label="Sound controls"
+            onClick={() => { setShowYtPanel(false); setShowSoundPanel((v) => !v); }}
+            aria-label="사운드 설정"
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm hover:bg-white/15"
           >
             <span className="text-lg leading-none">{sound ? '🔊' : '🔇'}</span>
-            <span className="hidden sm:inline">Sound</span>
+            <span className="hidden sm:inline">사운드</span>
           </button>
           {showSoundPanel && (
             <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-72 bg-black/85 backdrop-blur border border-white/20 rounded-xl p-4 space-y-3 text-white text-xs shadow-2xl">
@@ -181,7 +195,7 @@ export default function InFlight() {
         {/* Separate YouTube pill */}
         <div className="relative">
           <button
-            onClick={() => setShowYtPanel((v) => !v)}
+            onClick={() => { setShowSoundPanel(false); setShowYtPanel((v) => !v); }}
             aria-label="YouTube"
             className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm hover:bg-white/15"
           >
@@ -203,7 +217,7 @@ export default function InFlight() {
                   onClick={applyYouTubeFromPanel}
                   className="px-3 py-1.5 text-[11px] bg-orange-500/80 hover:bg-orange-500 rounded"
                 >
-                  Set
+                  적용
                 </button>
               </div>
               {ytErr && <p className="text-[10px] text-red-300">{ytErr}</p>}
@@ -219,7 +233,7 @@ export default function InFlight() {
                     onChange={(e) => setShowMusicVideo(e.target.checked)}
                     className="cursor-pointer"
                   />
-                  <span>🎬 영상 표시 (우하단 미니 플레이어)</span>
+                  <span>🎬 영상 표시 (드래그로 위치 이동 가능)</span>
                 </label>
               )}
             </div>
@@ -229,7 +243,7 @@ export default function InFlight() {
           onClick={handleAbort}
           className="px-4 py-2 rounded-full bg-red-500/20 backdrop-blur border border-red-400/40 text-red-200 text-sm hover:bg-red-500/30"
         >
-          Abort
+          중단
         </button>
       </div>
     </div>
