@@ -28,7 +28,7 @@ export default function Booking() {
   function applyYouTube() {
     const id = extractYouTubeId(ytUrl);
     if (!id) {
-      setYtError('YouTube URL을 확인해주세요 (예: https://youtu.be/...)');
+      setYtError('YouTube URL 확인 필요');
       return;
     }
     setYtError('');
@@ -36,131 +36,144 @@ export default function Booking() {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-8 space-y-8">
-      <h2 className="text-2xl font-bold">Book your flight</h2>
+    <div className="max-w-5xl mx-auto px-6 py-4">
+      <h2 className="text-xl font-bold mb-3">Book your flight</h2>
 
-      <section>
-        <h3 className="text-sm uppercase tracking-wider mb-3">Duration</h3>
-        <div className="flex flex-wrap gap-2">
-          {DURATIONS.map(d => (
-            <button key={d} onClick={() => setDuration(d)}
-              className={`px-4 py-2 rounded-lg border ${selectedDuration === d ? 'bg-orange-500 text-white border-orange-500' : 'border-slate-300'}`}>
-              {d} min
-            </button>
-          ))}
-          <input type="number" min={1} max={300} placeholder="custom"
-            value={custom}
-            onChange={e => setCustom(e.target.value)}
-            onBlur={() => { const n = parseInt(custom); if (n > 0) setDuration(n); }}
-            className="px-3 py-2 border border-slate-300 rounded-lg w-24" />
-        </div>
-      </section>
-
-      <section>
-        <h3 className="text-sm uppercase tracking-wider mb-3">
-          Route <span className="text-red-500 normal-case">*필수</span>
-        </h3>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="block">
-            <div className="text-xs text-slate-500 mb-1">From (현재 위치)</div>
-            <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
-              className={`w-full px-3 py-2 border-2 rounded-lg bg-white ${origin ? 'border-emerald-500' : 'border-red-300'}`}>
-              <option value="">━ 선택 ━</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
+      {/* Two-column grid: left = time/category/route; right = music */}
+      <div className="grid lg:grid-cols-2 gap-x-6 gap-y-3">
+        {/* LEFT column */}
+        <div className="space-y-3">
+          {/* Duration */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Duration</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {DURATIONS.map((d) => (
+                <button key={d} onClick={() => setDuration(d)}
+                  className={`px-3 py-1.5 text-sm rounded-md border ${selectedDuration === d ? 'bg-orange-500 text-white border-orange-500' : 'border-slate-300 bg-white'}`}>
+                  {d}m
+                </button>
               ))}
-            </select>
-          </label>
-          <label className="block">
-            <div className="text-xs text-slate-500 mb-1">To (목적지)</div>
-            <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
-              className={`w-full px-3 py-2 border-2 rounded-lg bg-white ${destination ? 'border-emerald-500' : 'border-red-300'}`}>
-              <option value="">━ 선택 ━</option>
-              {COUNTRIES.map((c) => (
-                <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
+              <input type="number" min={1} max={300} placeholder="custom"
+                value={custom}
+                onChange={(e) => setCustom(e.target.value)}
+                onBlur={() => { const n = parseInt(custom); if (n > 0) setDuration(n); }}
+                className="px-2 py-1.5 text-sm border border-slate-300 rounded-md w-20" />
+            </div>
+          </section>
+
+          {/* Route */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">
+              Route <span className="text-red-500 normal-case">*필수</span>
+            </h3>
+            <div className="grid grid-cols-2 gap-2">
+              <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
+                className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${origin ? 'border-emerald-500' : 'border-red-300'}`}>
+                <option value="">━ From ━</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
+                ))}
+              </select>
+              <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
+                className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${destination ? 'border-emerald-500' : 'border-red-300'}`}>
+                <option value="">━ To ━</option>
+                {COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
+                ))}
+              </select>
+            </div>
+            {origin && destination && origin !== destination && (
+              <p className="text-[11px] text-emerald-700 mt-1">
+                ✓ {COUNTRIES.find((c) => c.code === origin)?.nameKo} → {COUNTRIES.find((c) => c.code === destination)?.nameKo}
+              </p>
+            )}
+            {origin && destination && origin === destination && (
+              <p className="text-[11px] text-red-500 mt-1">출발지와 목적지가 같습니다</p>
+            )}
+          </section>
+
+          {/* Category */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">Category</h3>
+            <div className="flex flex-wrap gap-1.5">
+              {settings.categories.map((c) => (
+                <button key={c.id} onClick={() => setCategory(c.id)}
+                  className={`px-3 py-1.5 text-sm rounded-md border ${selectedCategory === c.id ? 'text-white border-transparent' : 'border-slate-300 bg-white'}`}
+                  style={selectedCategory === c.id ? { backgroundColor: c.color } : {}}>
+                  {c.label}
+                </button>
               ))}
-            </select>
-          </label>
-        </div>
-        {origin && destination && origin !== destination && (
-          <p className="text-xs text-emerald-700 mt-2 font-semibold">
-            ✓ {COUNTRIES.find((c) => c.code === origin)?.nameKo} → {COUNTRIES.find((c) => c.code === destination)?.nameKo} 경로가 지도에 표시됩니다
-          </p>
-        )}
-        {origin && destination && origin === destination && (
-          <p className="text-xs text-red-500 mt-2">출발지와 목적지가 같습니다.</p>
-        )}
-      </section>
-
-      <section>
-        <h3 className="text-sm uppercase tracking-wider mb-3">Category</h3>
-        <div className="flex flex-wrap gap-2">
-          {settings.categories.map(c => (
-            <button key={c.id} onClick={() => setCategory(c.id)}
-              className={`px-4 py-2 rounded-lg border ${selectedCategory === c.id ? 'text-white border-transparent' : 'border-slate-300'}`}
-              style={selectedCategory === c.id ? { backgroundColor: c.color } : {}}>
-              {c.label}
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section>
-        <h3 className="text-sm uppercase tracking-wider mb-3">In-flight music (optional)</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <button onClick={() => setLofiTrack(null)}
-            className={`px-4 py-3 rounded-lg border text-left ${selectedTrack === null ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`}>
-            <div className="font-semibold text-sm">🔇 None</div>
-            <div className="text-xs opacity-70 mt-0.5">엔진 소리만</div>
-          </button>
-          {LOFI_TRACKS.map(t => (
-            <button key={t.id} onClick={() => setLofiTrack(t.id)}
-              className={`px-4 py-3 rounded-lg border text-left ${selectedTrack === t.id ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300'}`}>
-              <div className="font-semibold text-sm">{t.label}</div>
-              <div className="text-xs opacity-70 mt-0.5">{t.description}</div>
-            </button>
-          ))}
+            </div>
+          </section>
         </div>
 
-        <div className="mt-3 p-3 border border-slate-200 rounded-lg bg-slate-50">
-          <div className="text-xs font-bold mb-2 flex items-center gap-1">📺 YouTube URL</div>
-          <div className="flex gap-2">
-            <input
-              type="url"
-              placeholder="https://youtu.be/... 또는 https://youtube.com/watch?v=..."
-              value={ytUrl}
-              onChange={(e) => { setYtUrl(e.target.value); setYtError(''); }}
-              className="flex-1 px-3 py-2 border border-slate-300 rounded text-sm bg-white"
-            />
-            <button onClick={applyYouTube} className="bg-orange-500 text-white px-4 rounded text-sm">
-              Set
-            </button>
-          </div>
-          {ytError && <div className="text-xs text-red-500 mt-1">{ytError}</div>}
-          {isYouTubeTrack(selectedTrack) && !ytError && (
-            <div className="text-xs text-emerald-600 mt-2">✓ YouTube 선택됨: {youtubeIdFromTrack(selectedTrack)}</div>
+        {/* RIGHT column */}
+        <div className="space-y-3">
+          {/* Music tracks */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">In-flight music (optional)</h3>
+            <div className="grid grid-cols-2 gap-1.5">
+              <button onClick={() => setLofiTrack(null)}
+                className={`px-3 py-2 rounded-md border text-left text-xs ${selectedTrack === null ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300 bg-white'}`}>
+                <div className="font-semibold">🔇 None</div>
+                <div className="opacity-70 text-[10px]">엔진 소리만</div>
+              </button>
+              {LOFI_TRACKS.map((t) => (
+                <button key={t.id} onClick={() => setLofiTrack(t.id)}
+                  className={`px-3 py-2 rounded-md border text-left text-xs ${selectedTrack === t.id ? 'bg-slate-900 text-white border-slate-900' : 'border-slate-300 bg-white'}`}>
+                  <div className="font-semibold">{t.label}</div>
+                  <div className="opacity-70 text-[10px]">{t.description}</div>
+                </button>
+              ))}
+            </div>
+          </section>
+
+          {/* YouTube */}
+          <section>
+            <h3 className="text-[11px] uppercase tracking-wider text-slate-500 mb-1.5">📺 YouTube URL (optional)</h3>
+            <div className="flex gap-1.5">
+              <input
+                type="url"
+                placeholder="https://youtu.be/... 붙여넣기"
+                value={ytUrl}
+                onChange={(e) => { setYtUrl(e.target.value); setYtError(''); }}
+                className="flex-1 px-2 py-1.5 text-sm border border-slate-300 rounded-md bg-white"
+              />
+              <button onClick={applyYouTube} className="bg-orange-500 text-white px-3 py-1.5 text-sm rounded-md">
+                Set
+              </button>
+            </div>
+            {ytError && <p className="text-[11px] text-red-500 mt-1">{ytError}</p>}
+            {isYouTubeTrack(selectedTrack) && !ytError && (
+              <p className="text-[11px] text-emerald-600 mt-1">✓ YouTube: {youtubeIdFromTrack(selectedTrack)}</p>
+            )}
+          </section>
+
+          <p className="text-[10px] text-slate-400">선택한 트랙은 비행 시작 시점부터 재생됩니다.</p>
+        </div>
+      </div>
+
+      {/* Action bar */}
+      <div className="mt-4 flex items-center justify-between">
+        <div className="text-[11px] text-red-500">
+          {!canProceed && (
+            <>
+              {!selectedDuration && '시간 '}
+              {!selectedCategory && '카테고리 '}
+              {!origin && '출발지 '}
+              {!destination && '목적지 '}
+              {origin && destination && origin === destination && '출발지 ≠ 목적지'}
+              {!canProceed && <span className="ml-1">미선택</span>}
+            </>
           )}
-          <p className="text-[11px] text-slate-500 mt-2">YouTube는 비행 중 자동재생됩니다. 볼륨 조절은 브라우저 탭 볼륨 사용.</p>
         </div>
-
-        <p className="text-xs text-slate-400 mt-2">선택한 트랙은 비행 시작(stub tear) 시점부터 재생됩니다.</p>
-      </section>
-
-      {!canProceed && (
-        <p className="text-xs text-red-500 text-right">
-          {!selectedDuration && '시간 미선택  '}
-          {!selectedCategory && '카테고리 미선택  '}
-          {!origin && '출발지 미선택  '}
-          {!destination && '목적지 미선택  '}
-          {origin && destination && origin === destination && '출발지 ≠ 목적지'}
-        </p>
-      )}
-      <div className="flex gap-3 justify-end">
-        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
-        <button onClick={advance} disabled={!canProceed}
-          className="bg-orange-500 text-white px-6 py-2 rounded-lg disabled:opacity-40">
-          Next: Boarding pass →
-        </button>
+        <div className="flex gap-2">
+          <button onClick={abort} className="px-3 py-1.5 text-sm text-slate-500">Cancel</button>
+          <button onClick={advance} disabled={!canProceed}
+            className="bg-orange-500 text-white px-4 py-1.5 text-sm rounded-md disabled:opacity-40">
+            Next: Boarding pass →
+          </button>
+        </div>
       </div>
     </div>
   );

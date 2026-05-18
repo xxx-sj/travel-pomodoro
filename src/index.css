@@ -5,7 +5,6 @@
 @tailwind utilities;
 
 html, body {
-  background-color: #000;
   font-family: 'Inter', sans-serif;
   overscroll-behavior: none;
 }

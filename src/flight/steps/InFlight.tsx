@@ -74,7 +74,7 @@ export default function InFlight() {
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center gap-6 bg-black text-white">
+    <div className="fixed inset-0 z-50 overflow-hidden flex flex-col items-center justify-center gap-6 bg-black text-white">
       {/* World map background — fills the viewport with a little breathing room */}
       <div className="absolute inset-0 p-6 sm:p-10">
         <WorldMap
