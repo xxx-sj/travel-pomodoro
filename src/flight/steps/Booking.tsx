@@ -149,7 +149,7 @@ export default function Booking() {
             )}
           </section>
 
-          <p className="text-[10px] text-slate-400">선택한 트랙은 비행 시작 시점부터 재생됩니다.</p>
+          <p className="text-[10px] text-slate-400">선택한 트랙은 비행 시작 시점부터 재생됩니다. 비행 중 사운드 패널에서 볼륨 조절 가능.</p>
         </div>
       </div>
 
