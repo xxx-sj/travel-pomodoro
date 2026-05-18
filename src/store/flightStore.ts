@@ -3,6 +3,7 @@ import type { ActiveFlight, Flight, FlightStep } from '../types';
 import { appendFlight, loadActive, saveActive } from '../lib/storage';
 import { nanoid } from 'nanoid';
 import { elapsedSeconds } from '../lib/timer';
+import { audioBus } from '../lib/audio';
 
 const ORDER: FlightStep[] = ['booking', 'seat', 'boarding', 'checkin', 'inflight', 'landed'];
 
@@ -101,8 +102,15 @@ export const useFlightStore = create<State>((set, get) => ({
       status: 'completed',
     };
     appendFlight(flight);
+    audioBus.stop('engine');
+    audioBus.stopMusic();
     set({ active: null, lastCompleted: flight }); persist(null);
   },
 
-  abort: () => { set({ active: null }); persist(null); },
+  abort: () => {
+    audioBus.stop('engine');
+    audioBus.stopMusic();
+    set({ active: null });
+    persist(null);
+  },
 }));
