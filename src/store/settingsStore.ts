@@ -6,6 +6,7 @@ type State = {
   settings: Settings;
   setVolume: (v: number) => void;
   setMusicVolume: (v: number) => void;
+  setShowMusicVideo: (b: boolean) => void;
   setSoundEnabled: (b: boolean) => void;
   setNotificationsEnabled: (b: boolean) => void;
   setDefaultDuration: (m: number) => void;
@@ -22,6 +23,7 @@ export const useSettingsStore = create<State>((set, get) => ({
   settings: loadSettings() ?? DEFAULT_SETTINGS,
   setVolume: (v) => set({ settings: commit({ ...get().settings, volume: Math.max(0, Math.min(1, v)) }) }),
   setMusicVolume: (v) => set({ settings: commit({ ...get().settings, musicVolume: Math.max(0, Math.min(1, v)) }) }),
+  setShowMusicVideo: (b) => set({ settings: commit({ ...get().settings, showMusicVideo: b }) }),
   setSoundEnabled: (b) => set({ settings: commit({ ...get().settings, soundEnabled: b }) }),
   setNotificationsEnabled: (b) => set({ settings: commit({ ...get().settings, notificationsEnabled: b }) }),
   setDefaultDuration: (m) => set({ settings: commit({ ...get().settings, defaultDurationMinutes: m }) }),

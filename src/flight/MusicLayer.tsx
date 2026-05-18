@@ -15,6 +15,19 @@ const hiddenStyle: React.CSSProperties = {
   pointerEvents: 'none',
 };
 
+const visibleVideoStyle: React.CSSProperties = {
+  position: 'fixed',
+  bottom: 88,           // sit above the bottom control bar
+  right: 16,
+  width: 320,
+  height: 180,
+  borderRadius: 12,
+  overflow: 'hidden',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+  zIndex: 60,
+  border: '1px solid rgba(255,255,255,0.2)',
+};
+
 // Volume control for the YouTube iframe uses postMessage to the embedded
 // player. Requires `enablejsapi=1` in the iframe URL.
 function sendYouTubeCommand(iframe: HTMLIFrameElement, func: string, args: unknown[] = []) {
@@ -39,6 +52,7 @@ export default function MusicLayer() {
   const musicVolume = useSettingsStore((s) =>
     s.settings.soundEnabled ? s.settings.musicVolume : 0
   );
+  const showVideo = useSettingsStore((s) => s.settings.showMusicVideo);
 
   const inFlight = active?.step === 'inflight';
   const preset = inFlight ? findTrack(active?.lofiTrack) : null;
@@ -112,7 +126,7 @@ export default function MusicLayer() {
         />
       )}
       {ytId && (
-        <div style={hiddenStyle}>
+        <div style={showVideo ? visibleVideoStyle : hiddenStyle}>
           <iframe
             key={ytId}
             ref={iframeRef}

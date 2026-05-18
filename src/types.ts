@@ -26,6 +26,7 @@ export type Settings = {
   soundEnabled: boolean;
   volume: number;
   musicVolume: number;
+  showMusicVideo: boolean;
 };
 
 export type ActiveFlight = {
