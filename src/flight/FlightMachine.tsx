@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'framer-motion';
 import { useFlightStore } from '../store/flightStore';
 import { loadActive } from '../lib/storage';
 import { isExpired } from '../lib/timer';
@@ -55,12 +56,25 @@ export default function FlightMachine() {
     );
   }
 
-  switch (active.step) {
-    case 'booking': return <Booking />;
-    case 'seat': return <SeatSelection />;
-    case 'boarding': return <BoardingPass />;
-    case 'checkin': return <CheckIn />;
-    case 'inflight': return <InFlight />;
-    case 'landed': return <Landed flight={{ id: 'pending', category: '', plannedSeconds: 0, actualSeconds: 0, seat: '', startedAt: 0, completedAt: null, status: 'completed' }} />;
+  function renderStep() {
+    switch (active!.step) {
+      case 'booking': return <Booking />;
+      case 'seat': return <SeatSelection />;
+      case 'boarding': return <BoardingPass />;
+      case 'checkin': return <CheckIn />;
+      case 'inflight': return <InFlight />;
+      case 'landed': return <Landed flight={{ id: 'pending', category: '', plannedSeconds: 0, actualSeconds: 0, seat: '', startedAt: 0, completedAt: null, status: 'completed' }} />;
+    }
   }
+
+  return (
+    <motion.div
+      key={active.step}
+      initial={{ x: 60, opacity: 0 }}
+      animate={{ x: 0, opacity: 1 }}
+      transition={{ duration: 0.2 }}
+    >
+      {renderStep()}
+    </motion.div>
+  );
 }
