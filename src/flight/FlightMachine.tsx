@@ -15,18 +15,21 @@ export default function FlightMachine() {
   const { active, lastCompleted, hydrate, startBooking, abort, land } = useFlightStore();
   const [showResume, setShowResume] = useState(false);
 
+  // On mount, only check localStorage for a saved flight — DON'T hydrate the
+  // store yet. Hydrating immediately would make <MusicLayer> see the active
+  // flight and autoplay music before the user has confirmed Resume.
   useEffect(() => {
     const a = loadActive();
     if (a) setShowResume(true);
-    hydrate();
-  }, [hydrate]);
+  }, []);
 
   function onResume() {
     setShowResume(false);
-    const a = useFlightStore.getState().active;
-
     // Resume button click is a user gesture — safe to wake AudioContext.
     audioBus.resume();
+    // Now hydrate so the store (and <MusicLayer>) actually see the flight.
+    hydrate();
+    const a = useFlightStore.getState().active;
 
     if (
       a?.step === 'inflight' &&
@@ -40,11 +43,14 @@ export default function FlightMachine() {
 
     if (a?.step === 'inflight') {
       audioBus.play('engine');
-      // Music auto-restarts via <MusicLayer> based on active.step / lofiTrack.
+      // Music auto-starts via <MusicLayer> now that active is in the store.
     }
   }
 
   function onDiscard() {
+    // Store is still empty (we never hydrated), but the legacy flight is in
+    // localStorage. Clear it via the store action which also handles audio.
+    hydrate();
     abort();
     setShowResume(false);
   }
