@@ -44,8 +44,12 @@ export default function InFlight() {
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find((c) => c.id === active.flight.category);
   const track = findTrack(active.lofiTrack);
-  const origin = findCountry(active.origin);
-  const destination = findCountry(active.destination);
+  // Visual fallback: if the user is in a legacy active flight that pre-dates
+  // the route feature, show ICN → JFK as a stand-in so the map still has a
+  // path + plane. New flights always pick their own pair in Booking.
+  const origin = findCountry(active.origin) ?? findCountry('KR');
+  const destination = findCountry(active.destination) ?? findCountry('US');
+  const hasUserRoute = !!active.origin && !!active.destination;
 
   const elapsed = elapsedSeconds(active.flight.startedAt);
   const progress = Math.max(0, Math.min(1, elapsed / active.flight.plannedSeconds));
@@ -87,7 +91,7 @@ export default function InFlight() {
           onExpire={handleExpire}
         />
         <div className="text-white/70 text-sm tracking-widest font-mono">
-          {cat?.label} · {origin && destination ? `${origin.iata} → ${destination.iata}` : active.flight.seat} · {active.flight.plannedSeconds / 60} MIN
+          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `Seat ${active.flight.seat}`} · {active.flight.plannedSeconds / 60} MIN
         </div>
         {track && (
           <div className="text-white/50 text-xs tracking-widest font-mono">
