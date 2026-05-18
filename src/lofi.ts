@@ -8,21 +8,21 @@ export type LofiTrack = {
 export const LOFI_TRACKS: LofiTrack[] = [
   {
     id: 'rainy-pad',
-    label: '🌧 Rainy Pad',
+    label: '🌧 Rain',
     url: '/lofi/rainy-pad.mp3',
-    description: 'Cmaj7 패드 + 비 소리. 가장 정적인 분위기.',
+    description: 'Pink noise 기반 비 소리 화이트노이즈. 가장 균질한 배경.',
   },
   {
     id: 'cafe',
-    label: '☕ Cafe',
+    label: '☕ Cafe Murmur',
     url: '/lofi/cafe.mp3',
-    description: 'Dm7 따뜻한 패드 + 소음. 카페 같은 배경.',
+    description: 'Brown noise 럼블 + 미드주파 머머. 카페 배경 소음 느낌.',
   },
   {
     id: 'forest',
-    label: '🌲 Forest',
+    label: '🌲 Wind & Leaves',
     url: '/lofi/forest.mp3',
-    description: 'Am9 깊은 톤 + 바람 소리. 차분한 자연 분위기.',
+    description: '저주파 바람 + 고주파 잎사귀. 야외 자연 화이트노이즈.',
   },
 ];
 
