@@ -1,0 +1,62 @@
+import { describe, it, expect, beforeEach } from 'vitest';
+import { useFlightStore } from './flightStore';
+
+describe('flightStore', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    useFlightStore.setState({ active: null, lastCompleted: null });
+  });
+
+  it('starts with no active flight and no lastCompleted', () => {
+    expect(useFlightStore.getState().active).toBeNull();
+    expect(useFlightStore.getState().lastCompleted).toBeNull();
+  });
+
+  it('startBooking creates active in booking step', () => {
+    useFlightStore.getState().startBooking();
+    expect(useFlightStore.getState().active?.step).toBe('booking');
+  });
+
+  it('chooses duration/category then advances to seat', () => {
+    const s = useFlightStore.getState();
+    s.startBooking();
+    s.setDuration(25);
+    s.setCategory('work');
+    s.advance();
+    expect(useFlightStore.getState().active?.step).toBe('seat');
+    expect(useFlightStore.getState().active?.flight.plannedSeconds).toBe(1500);
+    expect(useFlightStore.getState().active?.flight.category).toBe('work');
+  });
+
+  it('abort clears active without appending history', () => {
+    const s = useFlightStore.getState();
+    s.startBooking();
+    s.abort();
+    expect(useFlightStore.getState().active).toBeNull();
+  });
+
+  it('startFlight sets startedAt and moves to inflight', () => {
+    const s = useFlightStore.getState();
+    s.startBooking(); s.setDuration(25); s.setCategory('work'); s.advance();
+    s.setSeat('12A'); s.advance(); s.advance();
+    s.startFlight();
+    expect(useFlightStore.getState().active?.step).toBe('inflight');
+    expect(useFlightStore.getState().active?.flight.startedAt).toBeTruthy();
+  });
+
+  it('land completes flight, appends to history, clears active, sets lastCompleted', () => {
+    const s = useFlightStore.getState();
+    s.startBooking(); s.setDuration(25); s.setCategory('work');
+    s.advance(); s.setSeat('12A'); s.advance(); s.advance(); s.startFlight();
+    s.land();
+    expect(useFlightStore.getState().active).toBeNull();
+    expect(useFlightStore.getState().lastCompleted?.category).toBe('work');
+    expect(useFlightStore.getState().lastCompleted?.seat).toBe('12A');
+  });
+
+  it('dismissLanded clears the post-flight screen', () => {
+    useFlightStore.setState({ lastCompleted: { id: 'x', category: 'work', plannedSeconds: 60, actualSeconds: 60, seat: '1A', startedAt: 0, completedAt: 60, status: 'completed' } });
+    useFlightStore.getState().dismissLanded();
+    expect(useFlightStore.getState().lastCompleted).toBeNull();
+  });
+});
