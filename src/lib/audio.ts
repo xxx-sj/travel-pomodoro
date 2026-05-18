@@ -1,10 +1,11 @@
-export type SoundId = 'takeoff' | 'engine' | 'landing' | 'tear';
+export type SoundId = 'takeoff' | 'engine' | 'landing' | 'captain_takeoff' | 'captain_landing';
 
 const URLS: Record<SoundId, string> = {
   takeoff: '/sounds/takeoff.mp3',
   engine: '/sounds/engine.mp3',
   landing: '/sounds/landing.mp3',
-  tear: '/sounds/tear.mp3',
+  captain_takeoff: '/sounds/captain_takeoff.mp3',
+  captain_landing: '/sounds/captain_landing.mp3',
 };
 
 export class AudioBus {

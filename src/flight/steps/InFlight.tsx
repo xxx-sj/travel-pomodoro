@@ -46,7 +46,9 @@ export default function InFlight() {
 
   function handleExpire() {
     audioBus.stop('engine');
-    audioBus.play('landing');
+    audioBus.play('captain_landing');
+    // Landing chime layered after captain's announcement
+    setTimeout(() => audioBus.play('landing'), 5500);
     if (useSettingsStore.getState().settings.notificationsEnabled) {
       notify('Flight landed', 'Your focus session is complete.');
     }

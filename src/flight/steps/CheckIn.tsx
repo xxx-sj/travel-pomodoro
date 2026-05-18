@@ -20,7 +20,10 @@ export default function CheckIn() {
     audioBus.resume();
     setTimeout(() => {
       audioBus.play('takeoff');
+      // Engine ambient fades in after the takeoff roar peaks
       setTimeout(() => audioBus.play('engine'), 1500);
+      // Captain announcement on top of engine
+      setTimeout(() => audioBus.play('captain_takeoff'), 3500);
       startFlight();
     }, 350);
   }
