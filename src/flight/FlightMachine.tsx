@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../store/flightStore';
 import { loadActive } from '../lib/storage';
 import { isExpired } from '../lib/timer';
+import { audioBus } from '../lib/audio';
+import { findTrack } from '../lofi';
 import ResumeModal from './ResumeModal';
 import Booking from './steps/Booking';
 import SeatSelection from './steps/SeatSelection';
@@ -24,6 +26,10 @@ export default function FlightMachine() {
   function onResume() {
     setShowResume(false);
     const a = useFlightStore.getState().active;
+
+    // Resume button click is a user gesture — safe to wake AudioContext.
+    audioBus.resume();
+
     if (
       a?.step === 'inflight' &&
       a.flight.startedAt &&
@@ -31,10 +37,19 @@ export default function FlightMachine() {
       isExpired(a.flight.startedAt, a.flight.plannedSeconds)
     ) {
       land();
+      return;
+    }
+
+    // Restart sounds if user is being dropped back into an active flight.
+    if (a?.step === 'inflight') {
+      audioBus.play('engine');
+      const track = findTrack(a.lofiTrack);
+      if (track) audioBus.playMusic(track.url);
     }
   }
 
   function onDiscard() {
+    audioBus.stopMusic();
     abort();
     setShowResume(false);
   }

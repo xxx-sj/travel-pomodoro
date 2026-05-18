@@ -7,6 +7,7 @@ import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
 import { findTrack } from '../../lofi';
+import { backgroundFor } from '../../lib/seatTheme';
 
 function Cloud({ delay, top, scale }: { delay: number; top: string; scale: number }) {
   return (
@@ -74,7 +75,10 @@ export default function InFlight() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-night via-deepblue to-sunset relative overflow-hidden flex flex-col items-center justify-center gap-6">
+    <div
+      className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center gap-6 transition-[background] duration-700"
+      style={{ background: backgroundFor(active.flight.seat) }}
+    >
       <Cloud delay={0} top="30%" scale={1} />
       <Cloud delay={8} top="50%" scale={0.7} />
       <Cloud delay={15} top="70%" scale={0.9} />

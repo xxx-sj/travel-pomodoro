@@ -72,18 +72,27 @@ export class AudioBus {
     if (this.musicUrl === url && this.music && !this.music.paused) return;
     this.stopMusic();
     if (!this.ctx || !this.musicGain) return;
-    try {
-      const el = new Audio(url);
-      el.preload = 'auto';
-      el.loop = true;
-      const source = this.ctx.createMediaElementSource(el);
-      source.connect(this.musicGain);
-      el.play().catch(() => { /* may be missing or autoplay blocked */ });
-      this.music = el;
-      this.musicUrl = url;
-    } catch {
-      this.music = null;
-      this.musicUrl = null;
+    const ctx = this.ctx;
+    const musicGain = this.musicGain;
+    const start = () => {
+      try {
+        const el = new Audio(url);
+        el.preload = 'auto';
+        el.loop = true;
+        const source = ctx.createMediaElementSource(el);
+        source.connect(musicGain);
+        el.play().catch(() => { /* missing file or autoplay blocked */ });
+        this.music = el;
+        this.musicUrl = url;
+      } catch {
+        this.music = null;
+        this.musicUrl = null;
+      }
+    };
+    if (ctx.state === 'suspended') {
+      ctx.resume().then(start).catch(() => start());
+    } else {
+      start();
     }
   }
 
@@ -107,9 +116,16 @@ export class AudioBus {
   play(id: SoundId): void {
     const el = this.elements.get(id);
     if (!el) return;
-    el.currentTime = 0;
-    this.fade(this.volume, 200);
-    el.play().catch(() => { /* ignore — file may be missing */ });
+    const start = () => {
+      el.currentTime = 0;
+      this.fade(this.volume, 200);
+      el.play().catch(() => { /* file missing or blocked */ });
+    };
+    if (this.ctx && this.ctx.state === 'suspended') {
+      this.ctx.resume().then(start).catch(() => start());
+    } else {
+      start();
+    }
   }
 
   stop(id: SoundId): void {
