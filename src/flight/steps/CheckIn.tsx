@@ -17,7 +17,7 @@ export default function CheckIn() {
   function doTear() {
     if (torn) return;
     setTorn(true);
-    audioBus.resume().then(() => audioBus.play('tear'));
+    audioBus.resume();
     setTimeout(() => {
       audioBus.play('takeoff');
       setTimeout(() => audioBus.play('engine'), 1500);
