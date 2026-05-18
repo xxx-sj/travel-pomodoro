@@ -1,31 +1,21 @@
-import { useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import Countdown from '../../components/Countdown';
+import WorldMap from '../../components/WorldMap';
 import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
 import { findTrack } from '../../lofi';
-import { backgroundFor } from '../../lib/seatTheme';
-
-function Cloud({ delay, top, scale }: { delay: number; top: string; scale: number }) {
-  return (
-    <motion.div
-      className="absolute w-32 h-8 bg-paper/70 rounded-full blur-sm"
-      style={{ top, scale }}
-      initial={{ x: '-30vw' }}
-      animate={{ x: '130vw' }}
-      transition={{ duration: 30, delay, repeat: Infinity, ease: 'linear' }}
-    />
-  );
-}
+import { findCountry } from '../../data/countries';
+import { elapsedSeconds } from '../../lib/timer';
 
 export default function InFlight() {
   const { active, land, abort } = useFlightStore();
   const { settings } = useSettingsStore();
-  const sound = useSettingsStore(s => s.settings.soundEnabled);
-  const setSound = useSettingsStore(s => s.setSoundEnabled);
+  const sound = useSettingsStore((s) => s.settings.soundEnabled);
+  const setSound = useSettingsStore((s) => s.setSoundEnabled);
+  const [, setTick] = useState(0);
 
   useEffect(() => {
     const handler = (e: BeforeUnloadEvent) => { e.preventDefault(); e.returnValue = ''; };
@@ -43,14 +33,24 @@ export default function InFlight() {
     };
   }, []);
 
+  // Per-second tick to drive the plane along the map path.
+  useEffect(() => {
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
-  const cat = settings.categories.find(c => c.id === active.flight.category);
+  const cat = settings.categories.find((c) => c.id === active.flight.category);
   const track = findTrack(active.lofiTrack);
+  const origin = findCountry(active.origin);
+  const destination = findCountry(active.destination);
+
+  const elapsed = elapsedSeconds(active.flight.startedAt);
+  const progress = Math.max(0, Math.min(1, elapsed / active.flight.plannedSeconds));
 
   function handleExpire() {
     audioBus.stop('engine');
     audioBus.play('captain_landing');
-    // Landing chime layered after captain's announcement
     setTimeout(() => audioBus.play('landing'), 5500);
     if (useSettingsStore.getState().settings.notificationsEnabled) {
       notify('Flight landed', 'Your focus session is complete.');
@@ -66,31 +66,41 @@ export default function InFlight() {
   }
 
   return (
-    <div
-      className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center gap-6 transition-[background] duration-700"
-      style={{ background: backgroundFor(active.flight.seat) }}
-    >
-      <Cloud delay={0} top="30%" scale={1} />
-      <Cloud delay={8} top="50%" scale={0.7} />
-      <Cloud delay={15} top="70%" scale={0.9} />
-      <div className="relative z-10 flex flex-col items-center gap-6">
-        <Countdown startedAt={active.flight.startedAt} plannedSeconds={active.flight.plannedSeconds} onExpire={handleExpire} />
-        <div className="text-amber-50 text-sm tracking-widest font-mono opacity-70">
-          {cat?.label} · {active.flight.seat} · {(active.flight.plannedSeconds / 60)} MIN
+    <div className="min-h-screen relative overflow-hidden flex flex-col items-center justify-center gap-6 bg-black text-white">
+      {/* World map background */}
+      <div className="absolute inset-0 flex items-center justify-center p-8 opacity-90">
+        <WorldMap
+          origin={origin}
+          destination={destination}
+          progress={progress}
+          className="w-full h-full max-w-5xl"
+        />
+      </div>
+
+      {/* Countdown + meta on top */}
+      <div className="relative z-10 flex flex-col items-center gap-4">
+        <Countdown
+          startedAt={active.flight.startedAt}
+          plannedSeconds={active.flight.plannedSeconds}
+          onExpire={handleExpire}
+        />
+        <div className="text-white/70 text-sm tracking-widest font-mono">
+          {cat?.label} · {origin && destination ? `${origin.iata} → ${destination.iata}` : active.flight.seat} · {active.flight.plannedSeconds / 60} MIN
         </div>
         {track && (
-          <div className="text-amber-50/60 text-xs tracking-widest font-mono">
+          <div className="text-white/50 text-xs tracking-widest font-mono">
             ♪ Now playing: {track.label}
           </div>
         )}
       </div>
+
       <button
         onClick={() => setSound(!sound)}
         aria-label={sound ? 'Mute sound' : 'Unmute sound'}
-        className="absolute top-4 right-16 text-amber-50/60 text-lg z-10">
+        className="absolute top-4 right-16 text-white/60 text-lg z-10">
         {sound ? '🔊' : '🔇'}
       </button>
-      <button onClick={handleAbort} className="absolute top-4 right-4 text-amber-50/40 text-xs z-10">
+      <button onClick={handleAbort} className="absolute top-4 right-4 text-white/40 text-xs z-10">
         Abort
       </button>
     </div>

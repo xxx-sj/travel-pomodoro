@@ -21,6 +21,8 @@ type State = {
   hydrate: () => void;
   dismissLanded: () => void;
   setLofiTrack: (id: string | null) => void;
+  setOrigin: (code: string | null) => void;
+  setDestination: (code: string | null) => void;
 };
 
 function persist(active: ActiveFlight | null) {
@@ -64,6 +66,18 @@ export const useFlightStore = create<State>((set, get) => ({
   setLofiTrack: (id) => set(s => {
     if (!s.active) return s;
     const a = { ...s.active, lofiTrack: id };
+    persist(a); return { active: a };
+  }),
+
+  setOrigin: (code) => set(s => {
+    if (!s.active) return s;
+    const a = { ...s.active, origin: code };
+    persist(a); return { active: a };
+  }),
+
+  setDestination: (code) => set(s => {
+    if (!s.active) return s;
+    const a = { ...s.active, destination: code };
     persist(a); return { active: a };
   }),
 

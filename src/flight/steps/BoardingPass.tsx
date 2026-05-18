@@ -2,6 +2,7 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
+import { findCountry } from '../../data/countries';
 
 export default function BoardingPass() {
   const { active, advance, abort } = useFlightStore();
@@ -22,6 +23,8 @@ export default function BoardingPass() {
           category={cat}
           durationMinutes={active.flight.plannedSeconds / 60}
           seat={active.flight.seat}
+          origin={findCountry(active.origin)}
+          destination={findCountry(active.destination)}
         />
       </motion.div>
       <div className="flex gap-3 justify-center">

@@ -1,12 +1,20 @@
 import type { Category } from '../types';
+import type { Country } from '../data/countries';
 
 type Props = {
   category: Category;
   durationMinutes: number;
   seat: string;
+  origin?: Country | null;
+  destination?: Country | null;
 };
 
-export default function BoardingPassCard({ category, durationMinutes, seat }: Props) {
+export default function BoardingPassCard({ category, durationMinutes, seat, origin, destination }: Props) {
+  const fromCode = origin?.iata ?? 'NOW';
+  const fromLabel = origin?.nameKo ?? '현재';
+  const toCode = destination?.iata ?? 'DONE';
+  const toLabel = destination?.nameKo ?? '완료';
+
   return (
     <div className="grid grid-cols-[1fr_auto] bg-amber-50 text-slate-900 rounded-xl overflow-hidden shadow-xl max-w-md mx-auto font-mono">
       <div className="p-6 border-r-2 border-dashed border-amber-200">
@@ -15,9 +23,15 @@ export default function BoardingPassCard({ category, durationMinutes, seat }: Pr
           <span className="text-slate-500">FOCUS CLASS</span>
         </div>
         <div className="flex items-center justify-between mb-5">
-          <div className="text-center"><div className="text-2xl font-extrabold">NOW</div><div className="text-[10px] text-slate-500">현재</div></div>
+          <div className="text-center">
+            <div className="text-2xl font-extrabold">{fromCode}</div>
+            <div className="text-[10px] text-slate-500">{fromLabel}</div>
+          </div>
           <div className="text-orange-500 text-xl -rotate-12">✈</div>
-          <div className="text-center"><div className="text-2xl font-extrabold">DONE</div><div className="text-[10px] text-slate-500">완료</div></div>
+          <div className="text-center">
+            <div className="text-2xl font-extrabold">{toCode}</div>
+            <div className="text-[10px] text-slate-500">{toLabel}</div>
+          </div>
         </div>
         <div className="grid grid-cols-3 gap-3 text-xs">
           <div><div className="text-slate-500 text-[9px] tracking-widest">CATEGORY</div><div className="font-bold" style={{ color: category.color }}>{category.label}</div></div>

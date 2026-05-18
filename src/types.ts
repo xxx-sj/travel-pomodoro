@@ -32,4 +32,6 @@ export type ActiveFlight = {
   step: FlightStep;
   flight: Partial<Flight>;
   lofiTrack?: string | null;
+  origin?: string | null;       // country code (ISO 3166-1 alpha-2)
+  destination?: string | null;  // country code
 };

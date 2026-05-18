@@ -19,6 +19,12 @@ describe('Flight full flow', () => {
     await user.click(screen.getByText('Book a flight'));
     await user.click(screen.getByText('25 min'));
     await user.click(screen.getByText('일'));
+
+    // New: origin + destination dropdowns
+    const selects = screen.getAllByRole('combobox');
+    await user.selectOptions(selects[0], 'KR');
+    await user.selectOptions(selects[1], 'JP');
+
     await user.click(screen.getByText(/Next: Choose seat/));
 
     await user.click(screen.getByText('1A'));

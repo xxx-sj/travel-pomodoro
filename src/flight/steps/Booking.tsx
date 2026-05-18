@@ -3,18 +3,21 @@ import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { LOFI_TRACKS } from '../../lofi';
 import { extractYouTubeId, isYouTubeTrack, youtubeIdFromTrack, YT_PREFIX } from '../../lib/youtube';
+import { COUNTRIES } from '../../data/countries';
 
 const DURATIONS = [15, 25, 45, 60, 90];
 
 export default function Booking() {
-  const { active, setDuration, setCategory, setLofiTrack, advance, abort } = useFlightStore();
+  const { active, setDuration, setCategory, setLofiTrack, setOrigin, setDestination, advance, abort } = useFlightStore();
   const { settings } = useSettingsStore();
   const [custom, setCustom] = useState('');
 
   const selectedDuration = active?.flight.plannedSeconds ? active.flight.plannedSeconds / 60 : null;
   const selectedCategory = active?.flight.category;
   const selectedTrack = active?.lofiTrack ?? null;
-  const canProceed = !!selectedDuration && !!selectedCategory;
+  const origin = active?.origin ?? '';
+  const destination = active?.destination ?? '';
+  const canProceed = !!selectedDuration && !!selectedCategory && !!origin && !!destination && origin !== destination;
 
   const initialYtUrl = isYouTubeTrack(selectedTrack)
     ? `https://youtu.be/${youtubeIdFromTrack(selectedTrack)}`
@@ -51,6 +54,35 @@ export default function Booking() {
             onBlur={() => { const n = parseInt(custom); if (n > 0) setDuration(n); }}
             className="px-3 py-2 border border-slate-300 rounded-lg w-24" />
         </div>
+      </section>
+
+      <section>
+        <h3 className="text-sm uppercase tracking-wider mb-3">Route</h3>
+        <div className="grid grid-cols-2 gap-3">
+          <label className="block">
+            <div className="text-xs text-slate-500 mb-1">From (현재 위치)</div>
+            <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
+              <option value="">선택</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
+              ))}
+            </select>
+          </label>
+          <label className="block">
+            <div className="text-xs text-slate-500 mb-1">To (목적지)</div>
+            <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
+              className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white">
+              <option value="">선택</option>
+              {COUNTRIES.map((c) => (
+                <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
+              ))}
+            </select>
+          </label>
+        </div>
+        {origin && destination && origin === destination && (
+          <p className="text-xs text-red-500 mt-2">출발지와 목적지가 같습니다.</p>
+        )}
       </section>
 
       <section>

@@ -4,6 +4,7 @@ import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
 import { useEffect, useState } from 'react';
 import { audioBus } from '../../lib/audio';
+import { findCountry } from '../../data/countries';
 
 const TEAR_THRESHOLD = 180;
 
@@ -62,7 +63,13 @@ export default function CheckIn() {
     <div className="max-w-xl mx-auto p-8 space-y-6">
       <h2 className="text-2xl font-bold text-center">Tear stub to board</h2>
       <div className="relative">
-        <BoardingPassCard category={cat} durationMinutes={active.flight.plannedSeconds / 60} seat={active.flight.seat} />
+        <BoardingPassCard
+          category={cat}
+          durationMinutes={active.flight.plannedSeconds / 60}
+          seat={active.flight.seat}
+          origin={findCountry(active.origin)}
+          destination={findCountry(active.destination)}
+        />
         <motion.div
           role="button"
           tabIndex={0}
