@@ -10,6 +10,7 @@ export const DEFAULT_SETTINGS: Settings = {
   notificationsEnabled: false,
   soundEnabled: true,
   volume: 0.6,
+  musicVolume: 0.4,
 };
 
 const KEY_SETTINGS = 'focusflight:settings';

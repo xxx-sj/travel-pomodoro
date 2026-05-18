@@ -19,6 +19,7 @@ type State = {
   abort: () => void;
   hydrate: () => void;
   dismissLanded: () => void;
+  setLofiTrack: (id: string | null) => void;
 };
 
 function persist(active: ActiveFlight | null) {
@@ -56,6 +57,12 @@ export const useFlightStore = create<State>((set, get) => ({
   setSeat: (seat) => set(s => {
     if (!s.active) return s;
     const a = { ...s.active, flight: { ...s.active.flight, seat } };
+    persist(a); return { active: a };
+  }),
+
+  setLofiTrack: (id) => set(s => {
+    if (!s.active) return s;
+    const a = { ...s.active, lofiTrack: id };
     persist(a); return { active: a };
   }),
 

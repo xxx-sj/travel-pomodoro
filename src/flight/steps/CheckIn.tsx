@@ -78,7 +78,7 @@ export default function CheckIn() {
       </div>
       <p className="text-center text-xs text-slate-500">Drag the orange stub right — or hold Space</p>
       <div className="flex gap-3 justify-center">
-        <button onClick={abort} className="px-4 py-2 text-slate-500">Cancel</button>
+        <button onClick={() => { audioBus.stopMusic(); abort(); }} className="px-4 py-2 text-slate-500">Cancel</button>
       </div>
     </div>
   );

@@ -3,7 +3,7 @@ import { useSettingsStore } from '../store/settingsStore';
 import { requestPermission } from '../lib/notifications';
 
 export default function Settings() {
-  const { settings, setVolume, setSoundEnabled, setNotificationsEnabled, addCategory, removeCategory } = useSettingsStore();
+  const { settings, setVolume, setMusicVolume, setSoundEnabled, setNotificationsEnabled, addCategory, removeCategory } = useSettingsStore();
   const [newLabel, setNewLabel] = useState('');
   const [newColor, setNewColor] = useState('#888888');
   const [toast, setToast] = useState<string | null>(null);
@@ -65,9 +65,14 @@ export default function Settings() {
           Enable sounds
         </label>
         <div className="mt-3">
-          <label className="text-sm">Volume: {Math.round(settings.volume * 100)}%</label>
+          <label className="text-sm">Effects volume (engine, captain): {Math.round(settings.volume * 100)}%</label>
           <input type="range" min={0} max={1} step={0.05} value={settings.volume}
             onChange={e => setVolume(parseFloat(e.target.value))} className="w-full" />
+        </div>
+        <div className="mt-3">
+          <label className="text-sm">Music volume (lofi tracks): {Math.round(settings.musicVolume * 100)}%</label>
+          <input type="range" min={0} max={1} step={0.05} value={settings.musicVolume}
+            onChange={e => setMusicVolume(parseFloat(e.target.value))} className="w-full" />
         </div>
       </section>
 

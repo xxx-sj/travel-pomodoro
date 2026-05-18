@@ -25,9 +25,11 @@ export type Settings = {
   notificationsEnabled: boolean;
   soundEnabled: boolean;
   volume: number;
+  musicVolume: number;
 };
 
 export type ActiveFlight = {
   step: FlightStep;
   flight: Partial<Flight>;
+  lofiTrack?: string | null;
 };

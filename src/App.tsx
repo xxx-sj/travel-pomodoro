@@ -11,8 +11,10 @@ export default function App() {
     try { audioBus.init(); } catch { /* ignore */ }
     const s = useSettingsStore.getState().settings;
     audioBus.setVolume(s.soundEnabled ? s.volume : 0);
+    audioBus.setMusicVolume(s.soundEnabled ? s.musicVolume : 0);
     return useSettingsStore.subscribe((state) => {
       audioBus.setVolume(state.settings.soundEnabled ? state.settings.volume : 0);
+      audioBus.setMusicVolume(state.settings.soundEnabled ? state.settings.musicVolume : 0);
     });
   }, []);
 

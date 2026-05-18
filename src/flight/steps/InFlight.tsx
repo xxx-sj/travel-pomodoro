@@ -6,6 +6,7 @@ import Countdown from '../../components/Countdown';
 import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
+import { findTrack } from '../../lofi';
 
 function Cloud({ delay, top, scale }: { delay: number; top: string; scale: number }) {
   return (
@@ -41,11 +42,20 @@ export default function InFlight() {
     };
   }, []);
 
+  // Keep music playing across the in-flight phase. Booking step starts it on
+  // selection; this effect re-asserts in case of a page reload mid-flight.
+  useEffect(() => {
+    const track = findTrack(active?.lofiTrack);
+    if (track) audioBus.playMusic(track.url);
+  }, [active?.lofiTrack]);
+
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find(c => c.id === active.flight.category);
+  const track = findTrack(active.lofiTrack);
 
   function handleExpire() {
     audioBus.stop('engine');
+    audioBus.stopMusic();
     audioBus.play('captain_landing');
     // Landing chime layered after captain's announcement
     setTimeout(() => audioBus.play('landing'), 5500);
@@ -58,6 +68,7 @@ export default function InFlight() {
   function handleAbort() {
     if (confirm('Abort flight?')) {
       audioBus.stop('engine');
+      audioBus.stopMusic();
       abort();
     }
   }
@@ -72,6 +83,11 @@ export default function InFlight() {
         <div className="text-amber-50 text-sm tracking-widest font-mono opacity-70">
           {cat?.label} · {active.flight.seat} · {(active.flight.plannedSeconds / 60)} MIN
         </div>
+        {track && (
+          <div className="text-amber-50/60 text-xs tracking-widest font-mono">
+            ♪ Now playing: {track.label}
+          </div>
+        )}
       </div>
       <button
         onClick={() => setSound(!sound)}

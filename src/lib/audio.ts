@@ -11,8 +11,12 @@ const URLS: Record<SoundId, string> = {
 export class AudioBus {
   private ctx: AudioContext | null = null;
   private master: GainNode | null = null;
+  private musicGain: GainNode | null = null;
   private elements: Map<SoundId, HTMLAudioElement> = new Map();
+  private music: HTMLAudioElement | null = null;
+  private musicUrl: string | null = null;
   private volume = 0.6;
+  private musicVolume = 0.4;
 
   init(): void {
     if (this.ctx) return;
@@ -25,6 +29,10 @@ export class AudioBus {
       this.master.gain.value = this.volume;
       this.master.connect(this.ctx.destination);
 
+      this.musicGain = this.ctx.createGain();
+      this.musicGain.gain.value = this.musicVolume;
+      this.musicGain.connect(this.ctx.destination);
+
       for (const id of Object.keys(URLS) as SoundId[]) {
         const el = new Audio(URLS[id]);
         el.preload = 'auto';
@@ -36,6 +44,7 @@ export class AudioBus {
     } catch {
       this.ctx = null;
       this.master = null;
+      this.musicGain = null;
     }
   }
 
@@ -51,6 +60,40 @@ export class AudioBus {
   }
 
   getVolume(): number { return this.volume; }
+
+  setMusicVolume(v: number): void {
+    this.musicVolume = Math.max(0, Math.min(1, v));
+    if (this.musicGain) this.musicGain.gain.value = this.musicVolume;
+  }
+
+  getMusicVolume(): number { return this.musicVolume; }
+
+  playMusic(url: string): void {
+    if (this.musicUrl === url && this.music && !this.music.paused) return;
+    this.stopMusic();
+    if (!this.ctx || !this.musicGain) return;
+    try {
+      const el = new Audio(url);
+      el.preload = 'auto';
+      el.loop = true;
+      const source = this.ctx.createMediaElementSource(el);
+      source.connect(this.musicGain);
+      el.play().catch(() => { /* may be missing or autoplay blocked */ });
+      this.music = el;
+      this.musicUrl = url;
+    } catch {
+      this.music = null;
+      this.musicUrl = null;
+    }
+  }
+
+  stopMusic(): void {
+    if (this.music) {
+      try { this.music.pause(); } catch { /* ignore */ }
+      this.music = null;
+    }
+    this.musicUrl = null;
+  }
 
   private fade(toValue: number, durationMs = 200): void {
     if (!this.ctx || !this.master) return;
