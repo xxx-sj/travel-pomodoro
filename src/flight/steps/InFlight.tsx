@@ -102,64 +102,70 @@ export default function InFlight() {
         )}
       </div>
 
-      {/* Sound controls — quick access without leaving the flight */}
-      <div className="absolute top-4 right-16 z-10">
+      {/* Bottom control bar — sound panel + abort, easy to see + reach */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex items-center gap-3">
+        <div className="relative">
+          <button
+            onClick={() => setShowSoundPanel((v) => !v)}
+            aria-label="Sound controls"
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm hover:bg-white/15"
+          >
+            <span className="text-lg leading-none">{sound ? '🔊' : '🔇'}</span>
+            <span className="hidden sm:inline">Sound</span>
+          </button>
+          {showSoundPanel && (
+            <div className="absolute bottom-12 left-1/2 -translate-x-1/2 w-72 bg-black/85 backdrop-blur border border-white/20 rounded-xl p-4 space-y-3 text-white text-xs shadow-2xl">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={sound}
+                  onChange={(e) => setSound(e.target.checked)}
+                  className="cursor-pointer"
+                />
+                <span>사운드 활성화</span>
+              </label>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span>효과음 (엔진, 기장)</span>
+                  <span className="opacity-60">{Math.round(volume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={volume}
+                  onChange={(e) => setVolume(parseFloat(e.target.value))}
+                  disabled={!sound}
+                  className="w-full accent-orange-400 disabled:opacity-40"
+                />
+              </div>
+              <div>
+                <div className="flex justify-between mb-1">
+                  <span>음악</span>
+                  <span className="opacity-60">{Math.round(musicVolume * 100)}%</span>
+                </div>
+                <input
+                  type="range"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={musicVolume}
+                  onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
+                  disabled={!sound}
+                  className="w-full accent-orange-400 disabled:opacity-40"
+                />
+              </div>
+            </div>
+          )}
+        </div>
         <button
-          onClick={() => setShowSoundPanel((v) => !v)}
-          aria-label="Sound controls"
-          className="text-white/70 text-lg hover:text-white"
+          onClick={handleAbort}
+          className="px-4 py-2 rounded-full bg-red-500/20 backdrop-blur border border-red-400/40 text-red-200 text-sm hover:bg-red-500/30"
         >
-          {sound ? '🔊' : '🔇'}
+          Abort
         </button>
-        {showSoundPanel && (
-          <div className="absolute top-9 right-0 w-64 bg-black/80 backdrop-blur border border-white/15 rounded-lg p-4 space-y-3 text-white text-xs shadow-xl">
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={sound}
-                onChange={(e) => setSound(e.target.checked)}
-                className="cursor-pointer"
-              />
-              <span>사운드 활성화</span>
-            </label>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>효과음 (엔진, 기장)</span>
-                <span className="opacity-60">{Math.round(volume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={volume}
-                onChange={(e) => setVolume(parseFloat(e.target.value))}
-                disabled={!sound}
-                className="w-full accent-orange-400 disabled:opacity-40"
-              />
-            </div>
-            <div>
-              <div className="flex justify-between mb-1">
-                <span>음악</span>
-                <span className="opacity-60">{Math.round(musicVolume * 100)}%</span>
-              </div>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.05}
-                value={musicVolume}
-                onChange={(e) => setMusicVolume(parseFloat(e.target.value))}
-                disabled={!sound}
-                className="w-full accent-orange-400 disabled:opacity-40"
-              />
-            </div>
-          </div>
-        )}
       </div>
-      <button onClick={handleAbort} className="absolute top-4 right-4 text-white/40 text-xs z-10">
-        Abort
-      </button>
     </div>
   );
 }

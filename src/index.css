@@ -4,7 +4,11 @@
 @tailwind components;
 @tailwind utilities;
 
-body { font-family: 'Inter', sans-serif; }
+html, body {
+  background-color: #000;
+  font-family: 'Inter', sans-serif;
+  overscroll-behavior: none;
+}
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
