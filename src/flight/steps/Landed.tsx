@@ -13,9 +13,8 @@ export default function Landed({ flight }: { flight: Flight }) {
         <div className="opacity-60">Seat {flight.seat}</div>
       </div>
       <div className="flex gap-3">
-        <button onClick={() => { dismissLanded(); startBooking(); }} className="bg-orange-500 px-6 py-3 rounded-lg">Book another</button>
-        <button onClick={dismissLanded} className="px-6 py-3 border border-amber-50/30 rounded-lg">
-          Home
+        <button onClick={() => { dismissLanded(); startBooking(); }} className="bg-orange-500 px-6 py-3 rounded-lg">
+          Book another
         </button>
       </div>
     </div>

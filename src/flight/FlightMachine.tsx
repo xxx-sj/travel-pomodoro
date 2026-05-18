@@ -23,6 +23,17 @@ export default function FlightMachine() {
     if (a) setShowResume(true);
   }, []);
 
+  // When nothing else is happening (no resume modal, no active flight, no
+  // landing screen, no saved flight to resume), skip the "Book a flight"
+  // intro and jump straight to the Booking step. The loadActive() recheck
+  // covers the initial mount race where setShowResume(true) is queued but
+  // the closure of this effect still has the stale `showResume=false`.
+  useEffect(() => {
+    if (!showResume && !active && !lastCompleted && !loadActive()) {
+      startBooking();
+    }
+  }, [showResume, active, lastCompleted, startBooking]);
+
   function onResume() {
     setShowResume(false);
     // Resume button click is a user gesture — safe to wake AudioContext.
@@ -61,16 +72,10 @@ export default function FlightMachine() {
 
   if (!active && lastCompleted) return <Landed flight={lastCompleted} />;
 
-  if (!active) {
-    return (
-      <div className="p-8 text-center">
-        <h1 className="text-3xl font-bold mb-6">FocusFlight</h1>
-        <button onClick={startBooking} className="bg-orange-500 text-white px-6 py-3 rounded-lg">
-          Book a flight
-        </button>
-      </div>
-    );
-  }
+  // When `active` is null and no Landed state, the auto-startBooking effect
+  // above will create a fresh booking on the next render. Show nothing in
+  // the meantime to avoid flashing an intermediate UI.
+  if (!active) return null;
 
   function renderStep() {
     switch (active!.step) {

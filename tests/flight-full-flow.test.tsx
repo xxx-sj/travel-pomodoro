@@ -16,7 +16,9 @@ describe('Flight full flow', () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     render(<App />);
 
-    await user.click(screen.getByText('Book a flight'));
+    // Booking step auto-opens (no more "Book a flight" intro screen).
+    // Wait for the Duration buttons to render.
+    await screen.findByText('25m');
     await user.click(screen.getByText('25m'));
     await user.click(screen.getByText('일'));
 
