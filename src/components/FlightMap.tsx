@@ -13,6 +13,7 @@ type Props = {
   destination: Country | null;
   progress: number; // 0..1
   mode: ViewMode;
+  followZoom?: number;   // zoom level for 3rd-person mode (default 8.5)
   className?: string;
 };
 
@@ -58,7 +59,7 @@ function makeDotEl(color: string): HTMLDivElement {
   return el;
 }
 
-export default function FlightMap({ origin, destination, progress, mode, className }: Props) {
+export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const planeRef = useRef<Marker | null>(null);
@@ -161,7 +162,7 @@ export default function FlightMap({ origin, destination, progress, mode, classNa
       // of stuttering on every tick.
       map.easeTo({
         center: pos as [number, number],
-        zoom: 8.5,
+        zoom: followZoom,
         pitch: 72,
         bearing,
         duration: 100,
@@ -175,7 +176,7 @@ export default function FlightMap({ origin, destination, progress, mode, classNa
       );
       map.fitBounds(bounds, { padding: 80, pitch: 0, bearing: 0, duration: 400, maxZoom: 5 });
     }
-  }, [progress, mode, origin, destination]);
+  }, [progress, mode, origin, destination, followZoom]);
 
   return <div ref={containerRef} className={className} style={{ background: '#000' }} />;
 }

@@ -31,6 +31,7 @@ export default function InFlight() {
   const [showYtPanel, setShowYtPanel] = useState(false);
   const [showTodos, setShowTodos] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
+  const [followZoom, setFollowZoom] = useState(8.5);
   const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
@@ -82,7 +83,11 @@ export default function InFlight() {
   const hasUserRoute = !!origin && !!destination;
 
   const elapsed = elapsedSeconds(active.flight.startedAt);
-  const progress = Math.max(0, Math.min(1, elapsed / active.flight.plannedSeconds));
+  // progress uses sub-second precision so the chase camera glides smoothly
+  // between ticks (elapsedSeconds is floored to whole seconds → would freeze
+  // the camera for ~1s at a time and look like a 5s jump in long flights).
+  const elapsedMs = Math.max(0, Date.now() - active.flight.startedAt);
+  const progress = Math.max(0, Math.min(1, elapsedMs / (active.flight.plannedSeconds * 1000)));
 
   function handleExpire() {
     audioBus.stop('engine');
@@ -117,6 +122,7 @@ export default function InFlight() {
           destination={destination}
           progress={progress}
           mode={viewMode}
+          followZoom={followZoom}
           className="w-full h-full"
         />
       </div>
@@ -141,13 +147,31 @@ export default function InFlight() {
         </div>
       </div>
 
-      {/* View-mode toggle (top-right) */}
-      <button
-        onClick={() => setViewMode((m) => (m === 'overview' ? 'follow' : 'overview'))}
-        className="absolute top-6 right-6 z-10 flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs hover:bg-white/15"
-      >
-        {viewMode === 'overview' ? '🛰️ 전체 항로' : '✈️ 3인칭'}
-      </button>
+      {/* View-mode toggle + zoom slider (top-right) */}
+      <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+        {viewMode === 'follow' && (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
+            <span className="opacity-60">줌</span>
+            <input
+              type="range"
+              min={4}
+              max={14}
+              step={0.5}
+              value={followZoom}
+              onChange={(e) => setFollowZoom(parseFloat(e.target.value))}
+              className="w-24 accent-orange-400"
+              aria-label="3인칭 줌"
+            />
+            <span className="font-mono opacity-70 w-6 text-right">{followZoom.toFixed(1)}</span>
+          </div>
+        )}
+        <button
+          onClick={() => setViewMode((m) => (m === 'overview' ? 'follow' : 'overview'))}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs hover:bg-white/15"
+        >
+          {viewMode === 'overview' ? '🛰️ 전체 항로' : '✈️ 3인칭'}
+        </button>
+      </div>
 
       {/* Countdown still rendered (hidden) so its onExpire effect fires at 0 */}
       <div className="hidden">
