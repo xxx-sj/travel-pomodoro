@@ -55,12 +55,22 @@ const SATELLITE_STYLE = {
   ],
 };
 
+// 1000 points keeps inter-node spacing well under 2 km for typical flights,
+// so the bearing-via-lookahead computation below stays continuous instead of
+// stepping at each segment boundary (visible at high follow zoom).
+const PATH_NPOINTS = 1000;
+
 function buildPath(o: MapPoint, d: MapPoint): Position[] {
   const path = greatCircle(point([o.lng, o.lat]), point([d.lng, d.lat]), {
-    npoints: 200,
+    npoints: PATH_NPOINTS,
   }) as Feature<LineString>;
   return path.geometry.coordinates as Position[];
 }
+
+// Look-ahead distance for bearing computation, in path-index units. ~0.5% of
+// the route — small enough to be local, large enough to stay numerically
+// stable. Smaller values were jittery at extreme zoom.
+const BEARING_LOOKAHEAD = PATH_NPOINTS * 0.005;
 
 function bearingDeg(from: Position, to: Position): number {
   const lon1 = (from[0] * Math.PI) / 180;
@@ -138,7 +148,7 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
 
       if (origin && destination) {
         const path = greatCircle(point([origin.lng, origin.lat]), point([destination.lng, destination.lat]), {
-          npoints: 200,
+          npoints: PATH_NPOINTS,
         }) as Feature<LineString>;
 
         map.addSource('flight-path', { type: 'geojson', data: path });
@@ -215,9 +225,10 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
           ? Math.max(0, Math.min(1, (Date.now() - started) / (planned * 1000)))
           : 0;
 
-      const scaled = t * (path.length - 1);
-      const idx = Math.min(path.length - 1, Math.floor(scaled));
-      const next = Math.min(path.length - 1, idx + 1);
+      const last = path.length - 1;
+      const scaled = t * last;
+      const idx = Math.min(last, Math.floor(scaled));
+      const next = Math.min(last, idx + 1);
       const frac = scaled - idx;
       const a = path[idx];
       const b = path[next];
@@ -225,7 +236,22 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
         a[0] + frac * (b[0] - a[0]),
         a[1] + frac * (b[1] - a[1]),
       ];
-      const bearing = bearingDeg(a, b);
+      // Bearing as a continuous function of t — sample the same interpolation
+      // a small step ahead and take the angle between the two points. This
+      // avoids the discrete bearing snap at each segment boundary, which is
+      // invisible at low zoom but reads as a stutter at high follow zoom
+      // (pitch 72° amplifies even a 0.1° rotation across the visible area).
+      const scaledAhead = Math.min(last, scaled + BEARING_LOOKAHEAD);
+      const idxA = Math.min(last, Math.floor(scaledAhead));
+      const nextA = Math.min(last, idxA + 1);
+      const fracA = scaledAhead - idxA;
+      const pa = path[idxA];
+      const pb = path[nextA];
+      const posAhead: [number, number] = [
+        pa[0] + fracA * (pb[0] - pa[0]),
+        pa[1] + fracA * (pb[1] - pa[1]),
+      ];
+      const bearing = bearingDeg(pos, posAhead);
 
       plane.setLngLat(pos);
       plane.setRotation(bearing - 90);
