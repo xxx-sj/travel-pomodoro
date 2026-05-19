@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useFlightStore } from '../store/flightStore';
-import { loadActive } from '../lib/storage';
+import { loadActive, saveActive } from '../lib/storage';
 import { isExpired } from '../lib/timer';
 import { audioBus } from '../lib/audio';
 import ResumeModal from './ResumeModal';
@@ -10,6 +10,8 @@ import BoardingPass from './steps/BoardingPass';
 import CheckIn from './steps/CheckIn';
 import InFlight from './steps/InFlight';
 import Landed from './steps/Landed';
+
+const VALID_STEPS = new Set(['booking', 'boarding', 'checkin', 'inflight', 'landed']);
 
 export default function FlightMachine() {
   const { active, lastCompleted, hydrate, startBooking, abort, land } = useFlightStore();
@@ -24,6 +26,13 @@ export default function FlightMachine() {
   useEffect(() => {
     const a = loadActive();
     if (!a) return;
+    // Defensive cleanup: a legacy saved flight whose step no longer exists
+    // (e.g. the removed 'seat' step) should be discarded rather than carried
+    // forward — its render would silently blank the page.
+    if (!VALID_STEPS.has(a.step)) {
+      saveActive(null);
+      return;
+    }
     if (a.step === 'inflight') {
       setShowResume(true);
     } else {
