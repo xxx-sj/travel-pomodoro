@@ -55,9 +55,6 @@ const SATELLITE_STYLE = {
   ],
 };
 
-// 1000 points keeps inter-node spacing well under 2 km for typical flights,
-// so the bearing-via-lookahead computation below stays continuous instead of
-// stepping at each segment boundary (visible at high follow zoom).
 const PATH_NPOINTS = 1000;
 
 function buildPath(o: MapPoint, d: MapPoint): Position[] {
@@ -66,11 +63,6 @@ function buildPath(o: MapPoint, d: MapPoint): Position[] {
   }) as Feature<LineString>;
   return path.geometry.coordinates as Position[];
 }
-
-// Look-ahead distance for bearing computation, in path-index units. ~0.5% of
-// the route — small enough to be local, large enough to stay numerically
-// stable. Smaller values were jittery at extreme zoom.
-const BEARING_LOOKAHEAD = PATH_NPOINTS * 0.005;
 
 function bearingDeg(from: Position, to: Position): number {
   const lon1 = (from[0] * Math.PI) / 180;
@@ -178,20 +170,27 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
           .setLngLat([destination.lng, destination.lat])
           .addTo(map);
 
-        // Animated plane
+        const fixedBearing = bearingDeg(
+          [origin.lng, origin.lat],
+          [destination.lng, destination.lat],
+        );
+        cameraBearingRef.current = fixedBearing;
+
+        // Animated plane. Both position and (one-time) rotation are set
+        // here — the silhouette is pinned to the initial great-circle
+        // bearing, matching the camera, so neither marker nor camera
+        // rotates during flight (per-frame rotation read as swaying at
+        // high zoom on satellite tiles).
         planeRef.current = new maplibregl.Marker({
           element: makePlaneEl(),
           anchor: 'center',
           rotationAlignment: 'map',
+          rotation: fixedBearing - 90,
         })
           .setLngLat([origin.lng, origin.lat])
           .addTo(map);
 
         pathRef.current = buildPath(origin, destination);
-        cameraBearingRef.current = bearingDeg(
-          [origin.lng, origin.lat],
-          [destination.lng, destination.lat],
-        );
       }
     });
 
@@ -245,28 +244,11 @@ export default function FlightMap({ origin, destination, startedAt, plannedSecon
         a[0] + frac * (b[0] - a[0]),
         a[1] + frac * (b[1] - a[1]),
       ];
-      // Bearing as a continuous function of t — sample the same interpolation
-      // a small step ahead and take the angle between the two points. This
-      // avoids the discrete bearing snap at each segment boundary, which is
-      // invisible at low zoom but reads as a stutter at high follow zoom
-      // (pitch 72° amplifies even a 0.1° rotation across the visible area).
-      const scaledAhead = Math.min(last, scaled + BEARING_LOOKAHEAD);
-      const idxA = Math.min(last, Math.floor(scaledAhead));
-      const nextA = Math.min(last, idxA + 1);
-      const fracA = scaledAhead - idxA;
-      const pa = path[idxA];
-      const pb = path[nextA];
-      const posAhead: [number, number] = [
-        pa[0] + fracA * (pb[0] - pa[0]),
-        pa[1] + fracA * (pb[1] - pa[1]),
-      ];
-      const bearing = bearingDeg(pos, posAhead);
 
+      // Plane position only — rotation was pinned at marker creation to the
+      // initial great-circle bearing so the silhouette doesn't twist on
+      // every frame (was perceptible as swaying on satellite tiles).
       plane.setLngLat(pos);
-      // rotationAlignment 'map' applies the rotation in map-space, so the
-      // plane silhouette always points along its actual great-circle heading
-      // regardless of the (fixed) camera bearing.
-      plane.setRotation(bearing - 90);
 
       const currentMode = modeRef.current;
       if (currentMode === 'follow') {
