@@ -15,13 +15,21 @@ export default function FlightMachine() {
   const { active, lastCompleted, hydrate, startBooking, abort, land } = useFlightStore();
   const [showResume, setShowResume] = useState(false);
 
-  // On mount, only check localStorage for a saved flight — DON'T hydrate the
-  // store yet. Hydrating immediately would make <MusicLayer> see the active
-  // flight and autoplay music before the user has confirmed Resume.
+  // On mount, decide what to do with any saved flight:
+  // - In-flight (timer running) → show ResumeModal, defer hydrate so music
+  //   doesn't autoplay before the user explicitly resumes.
+  // - Earlier steps (booking / boarding / checkin) → just hydrate so the
+  //   user lands back on whichever step they were on, no modal needed
+  //   (nothing was "running" that would be jarring to interrupt).
   useEffect(() => {
     const a = loadActive();
-    if (a) setShowResume(true);
-  }, []);
+    if (!a) return;
+    if (a.step === 'inflight') {
+      setShowResume(true);
+    } else {
+      hydrate();
+    }
+  }, [hydrate]);
 
   // When nothing else is happening (no resume modal, no active flight, no
   // landing screen, no saved flight to resume), skip the "Book a flight"
