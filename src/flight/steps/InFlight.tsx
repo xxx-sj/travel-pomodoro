@@ -9,7 +9,19 @@ import { requestWakeLock, releaseWakeLock } from '../../lib/wakelock';
 import { audioBus } from '../../lib/audio';
 import { notify } from '../../lib/notifications';
 import { findTrack } from '../../lofi';
+import { findAirport } from '../../data/airports';
 import { findCountry } from '../../data/countries';
+
+// Resolve an origin/destination code that may be either a new airport IATA
+// (e.g. 'ICN') or a legacy ISO country code (e.g. 'KR'). Falls back to a
+// country's center so old saved flights keep rendering after the change.
+function resolveLocation(code: string | null | undefined) {
+  const a = findAirport(code);
+  if (a) return { code: a.code, cityKo: a.cityKo, lat: a.lat, lng: a.lng };
+  const c = findCountry(code);
+  if (c) return { code: c.iata, cityKo: c.nameKo, lat: c.lat, lng: c.lng };
+  return null;
+}
 import { elapsedSeconds, formatMMSS } from '../../lib/timer';
 import { extractYouTubeId, isYouTubeTrack, youtubeIdFromTrack, YT_PREFIX } from '../../lib/youtube';
 import TodoPanel from '../TodoPanel';
@@ -32,6 +44,7 @@ export default function InFlight() {
   const [showTodos, setShowTodos] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [followZoom, setFollowZoom] = useState(8.5);
+  const [satellite, setSatellite] = useState(false);
   const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
@@ -78,8 +91,8 @@ export default function InFlight() {
   if (!active || !active.flight.startedAt || !active.flight.plannedSeconds) return null;
   const cat = settings.categories.find((c) => c.id === active.flight.category);
   const track = findTrack(active.lofiTrack);
-  const origin = findCountry(active.origin);
-  const destination = findCountry(active.destination);
+  const origin = resolveLocation(active.origin);
+  const destination = resolveLocation(active.destination);
   const hasUserRoute = !!origin && !!destination;
 
   const elapsed = elapsedSeconds(active.flight.startedAt);
@@ -110,6 +123,8 @@ export default function InFlight() {
   const totalKm = origin && destination
     ? turfDistance(point([origin.lng, origin.lat]), point([destination.lng, destination.lat]), { units: 'kilometers' })
     : 0;
+  const originLabel = origin?.code ?? '';
+  const destLabel = destination?.code ?? '';
   const remainingKm = Math.max(0, totalKm * (1 - progress));
   const remainingSec = Math.max(0, active.flight.plannedSeconds - elapsed);
 
@@ -123,6 +138,7 @@ export default function InFlight() {
           progress={progress}
           mode={viewMode}
           followZoom={followZoom}
+          satellite={satellite}
           className="w-full h-full"
         />
       </div>
@@ -143,12 +159,19 @@ export default function InFlight() {
           </div>
         </div>
         <div className="text-white/60 text-xs tracking-widest font-mono mt-1">
-          {cat?.label} · {hasUserRoute && origin && destination ? `${origin.iata} → ${destination.iata}` : `좌석 ${active.flight.seat}`}
+          {cat?.label} · {hasUserRoute ? `${originLabel} → ${destLabel}` : `좌석 ${active.flight.seat}`}
         </div>
       </div>
 
-      {/* View-mode toggle + zoom slider (top-right) */}
+      {/* View-mode toggle + zoom slider + satellite toggle (top-right) */}
       <div className="absolute top-6 right-6 z-10 flex items-center gap-2">
+        <button
+          onClick={() => setSatellite((v) => !v)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-xs hover:bg-white/15"
+          aria-label="지도 스타일 전환"
+        >
+          {satellite ? '🛰️ 위성' : '🗺️ 지도'}
+        </button>
         {viewMode === 'follow' && (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
             <span className="opacity-60">줌</span>

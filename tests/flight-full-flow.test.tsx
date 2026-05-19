@@ -22,10 +22,10 @@ describe('Flight full flow', () => {
     await user.click(screen.getByText('25m'));
     await user.click(screen.getByText('일'));
 
-    // New: origin + destination dropdowns
+    // origin + destination dropdowns now contain airport IATA codes grouped by country
     const selects = screen.getAllByRole('combobox');
-    await user.selectOptions(selects[0], 'KR');
-    await user.selectOptions(selects[1], 'JP');
+    await user.selectOptions(selects[0], 'ICN');
+    await user.selectOptions(selects[1], 'NRT');
 
     await user.click(screen.getByText(/다음: 보딩패스/));
     await user.click(screen.getByText(/체크인/));

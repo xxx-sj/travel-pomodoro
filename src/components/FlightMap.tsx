@@ -4,23 +4,52 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import { greatCircle } from '@turf/great-circle';
 import { point } from '@turf/helpers';
 import type { Feature, LineString, Position } from 'geojson';
-import type { Country } from '../data/countries';
-
 export type ViewMode = 'overview' | 'follow';
 
+// A map endpoint: airport, country, or any lat/lng pair with a short label.
+export type MapPoint = {
+  code: string;
+  lat: number;
+  lng: number;
+};
+
 type Props = {
-  origin: Country | null;
-  destination: Country | null;
+  origin: MapPoint | null;
+  destination: MapPoint | null;
   progress: number; // 0..1
   mode: ViewMode;
-  followZoom?: number;   // zoom level for 3rd-person mode (default 8.5)
+  followZoom?: number;
+  satellite?: boolean;
   className?: string;
 };
 
 // OpenFreeMap dark style — fully free, no API key, OSM-derived vector tiles.
 const STYLE_URL = 'https://tiles.openfreemap.org/styles/dark';
 
-function buildPath(o: Country, d: Country): Position[] {
+// ESRI World Imagery — free raster satellite tiles, no API key. Attribution required.
+const SATELLITE_STYLE = {
+  version: 8 as const,
+  sources: {
+    'esri-satellite': {
+      type: 'raster' as const,
+      tiles: [
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      ],
+      tileSize: 256,
+      attribution: 'Tiles © Esri',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: 'esri-satellite',
+      type: 'raster' as const,
+      source: 'esri-satellite',
+    },
+  ],
+};
+
+function buildPath(o: MapPoint, d: MapPoint): Position[] {
   const path = greatCircle(point([o.lng, o.lat]), point([d.lng, d.lat]), {
     npoints: 200,
   }) as Feature<LineString>;
@@ -59,7 +88,7 @@ function makeDotEl(color: string): HTMLDivElement {
   return el;
 }
 
-export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, className }: Props) {
+export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, satellite = false, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const planeRef = useRef<Marker | null>(null);
@@ -76,7 +105,7 @@ export default function FlightMap({ origin, destination, progress, mode, followZ
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE_URL,
+      style: satellite ? SATELLITE_STYLE : STYLE_URL,
       center: initialCenter,
       zoom: 2,
       pitch: 0,
@@ -136,9 +165,11 @@ export default function FlightMap({ origin, destination, progress, mode, followZ
       map.remove();
       mapRef.current = null;
     };
-    // Recreate only when origin/destination identity changes.
+    // Recreate when origin/destination/satellite changes. (Satellite needs a
+    // full re-init because MapLibre's setStyle would otherwise drop our
+    // custom layers + markers and require re-installation.)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [origin?.code, destination?.code]);
+  }, [origin?.code, destination?.code, satellite]);
 
   // Update plane position + camera every progress / mode tick.
   useEffect(() => {

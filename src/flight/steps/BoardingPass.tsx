@@ -2,13 +2,22 @@ import { motion } from 'framer-motion';
 import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
+import { findAirport } from '../../data/airports';
 import { findCountry } from '../../data/countries';
+
+function asEndpoint(code: string | null | undefined) {
+  const a = findAirport(code);
+  if (a) return { code: a.code, label: a.cityKo };
+  const c = findCountry(code);
+  if (c) return { code: c.iata, label: c.nameKo };
+  return null;
+}
 
 export default function BoardingPass() {
   const { active, advance, abort } = useFlightStore();
   const { settings } = useSettingsStore();
   if (!active) return null;
-  const cat = settings.categories.find(c => c.id === active.flight.category);
+  const cat = settings.categories.find((c) => c.id === active.flight.category);
   if (!cat || !active.flight.seat || !active.flight.plannedSeconds) return null;
 
   return (
@@ -23,8 +32,8 @@ export default function BoardingPass() {
           category={cat}
           durationMinutes={active.flight.plannedSeconds / 60}
           seat={active.flight.seat}
-          origin={findCountry(active.origin)}
-          destination={findCountry(active.destination)}
+          origin={asEndpoint(active.origin)}
+          destination={asEndpoint(active.destination)}
         />
       </motion.div>
       <div className="flex gap-3 justify-center">

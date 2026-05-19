@@ -3,7 +3,7 @@ import { useFlightStore } from '../../store/flightStore';
 import { useSettingsStore } from '../../store/settingsStore';
 import { LOFI_TRACKS } from '../../lofi';
 import { extractYouTubeId, isYouTubeTrack, youtubeIdFromTrack, YT_PREFIX } from '../../lib/youtube';
-import { COUNTRIES } from '../../data/countries';
+import { AIRPORTS, COUNTRY_GROUPS, findAirport } from '../../data/airports';
 
 const DURATIONS = [15, 25, 45, 60, 90];
 
@@ -70,21 +70,29 @@ export default function Booking() {
               <select value={origin} onChange={(e) => setOrigin(e.target.value || null)}
                 className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${origin ? 'border-emerald-500' : 'border-red-300'}`}>
                 <option value="">━ 출발지 ━</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code}>{c.nameKo} ({c.iata})</option>
+                {COUNTRY_GROUPS.map((c) => (
+                  <optgroup key={c.code} label={c.nameKo}>
+                    {AIRPORTS.filter((a) => a.countryCode === c.code).map((a) => (
+                      <option key={a.code} value={a.code}>{a.cityKo} ({a.code})</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
               <select value={destination} onChange={(e) => setDestination(e.target.value || null)}
                 className={`w-full px-2 py-1.5 text-sm border-2 rounded-md bg-white ${destination ? 'border-emerald-500' : 'border-red-300'}`}>
                 <option value="">━ 목적지 ━</option>
-                {COUNTRIES.map((c) => (
-                  <option key={c.code} value={c.code} disabled={c.code === origin}>{c.nameKo} ({c.iata})</option>
+                {COUNTRY_GROUPS.map((c) => (
+                  <optgroup key={c.code} label={c.nameKo}>
+                    {AIRPORTS.filter((a) => a.countryCode === c.code).map((a) => (
+                      <option key={a.code} value={a.code} disabled={a.code === origin}>{a.cityKo} ({a.code})</option>
+                    ))}
+                  </optgroup>
                 ))}
               </select>
             </div>
             {origin && destination && origin !== destination && (
               <p className="text-[11px] text-emerald-700 mt-1">
-                ✓ {COUNTRIES.find((c) => c.code === origin)?.nameKo} → {COUNTRIES.find((c) => c.code === destination)?.nameKo}
+                ✓ {findAirport(origin)?.cityKo} → {findAirport(destination)?.cityKo}
               </p>
             )}
             {origin && destination && origin === destination && (

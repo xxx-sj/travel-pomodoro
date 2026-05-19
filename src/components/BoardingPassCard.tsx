@@ -1,19 +1,21 @@
 import type { Category } from '../types';
-import type { Country } from '../data/countries';
+
+// Generic shape — accepts airports (cityKo + code) or legacy countries (nameKo + iata).
+type Endpoint = { code: string; label: string };
 
 type Props = {
   category: Category;
   durationMinutes: number;
   seat: string;
-  origin?: Country | null;
-  destination?: Country | null;
+  origin?: Endpoint | null;
+  destination?: Endpoint | null;
 };
 
 export default function BoardingPassCard({ category, durationMinutes, seat, origin, destination }: Props) {
-  const fromCode = origin?.iata ?? 'NOW';
-  const fromLabel = origin?.nameKo ?? '현재';
-  const toCode = destination?.iata ?? 'DONE';
-  const toLabel = destination?.nameKo ?? '완료';
+  const fromCode = origin?.code ?? 'NOW';
+  const fromLabel = origin?.label ?? '현재';
+  const toCode = destination?.code ?? 'DONE';
+  const toLabel = destination?.label ?? '완료';
 
   return (
     <div className="grid grid-cols-[1fr_auto] bg-amber-50 text-slate-900 rounded-xl overflow-hidden shadow-xl max-w-md mx-auto font-mono">

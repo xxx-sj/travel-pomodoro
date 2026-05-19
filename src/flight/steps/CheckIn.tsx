@@ -4,7 +4,16 @@ import { useSettingsStore } from '../../store/settingsStore';
 import BoardingPassCard from '../../components/BoardingPassCard';
 import { useEffect, useState } from 'react';
 import { audioBus } from '../../lib/audio';
+import { findAirport } from '../../data/airports';
 import { findCountry } from '../../data/countries';
+
+function asEndpoint(code: string | null | undefined) {
+  const a = findAirport(code);
+  if (a) return { code: a.code, label: a.cityKo };
+  const c = findCountry(code);
+  if (c) return { code: c.iata, label: c.nameKo };
+  return null;
+}
 
 const TEAR_THRESHOLD = 180;
 
@@ -67,8 +76,8 @@ export default function CheckIn() {
           category={cat}
           durationMinutes={active.flight.plannedSeconds / 60}
           seat={active.flight.seat}
-          origin={findCountry(active.origin)}
-          destination={findCountry(active.destination)}
+          origin={asEndpoint(active.origin)}
+          destination={asEndpoint(active.destination)}
         />
         <motion.div
           role="button"
