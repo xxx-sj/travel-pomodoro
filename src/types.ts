@@ -36,3 +36,10 @@ export type ActiveFlight = {
   origin?: string | null;       // country code (ISO 3166-1 alpha-2)
   destination?: string | null;  // country code
 };
+
+export type Todo = {
+  id: string;
+  text: string;
+  done: boolean;
+  createdAt: number;
+};

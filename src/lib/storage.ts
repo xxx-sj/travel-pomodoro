@@ -1,4 +1,4 @@
-import type { Settings, Flight, ActiveFlight } from '../types';
+import type { Settings, Flight, ActiveFlight, Todo } from '../types';
 
 export const DEFAULT_SETTINGS: Settings = {
   categories: [
@@ -17,6 +17,7 @@ export const DEFAULT_SETTINGS: Settings = {
 const KEY_SETTINGS = 'focusflight:settings';
 const KEY_HISTORY = 'focusflight:history';
 const KEY_ACTIVE = 'focusflight:active';
+const KEY_TODOS = 'focusflight:todos';
 const KEY_VERSION = 'focusflight:schemaVersion';
 const CURRENT_VERSION = 1;
 const HISTORY_LIMIT = 1000;
@@ -59,4 +60,13 @@ export function loadActive(): ActiveFlight | null {
 export function saveActive(a: ActiveFlight | null): void {
   if (a === null) localStorage.removeItem(KEY_ACTIVE);
   else localStorage.setItem(KEY_ACTIVE, JSON.stringify(a));
+}
+
+export function loadTodos(): Todo[] {
+  const arr = readJSON<Todo[]>(KEY_TODOS, []);
+  return Array.isArray(arr) ? arr : [];
+}
+
+export function saveTodos(todos: Todo[]): void {
+  localStorage.setItem(KEY_TODOS, JSON.stringify(todos));
 }

@@ -10,6 +10,8 @@ import { findTrack } from '../../lofi';
 import { findCountry } from '../../data/countries';
 import { elapsedSeconds } from '../../lib/timer';
 import { extractYouTubeId, isYouTubeTrack, youtubeIdFromTrack, YT_PREFIX } from '../../lib/youtube';
+import TodoPanel from '../TodoPanel';
+import { useTodoStore } from '../../store/todoStore';
 
 export default function InFlight() {
   const { active, land, abort, setLofiTrack } = useFlightStore();
@@ -25,6 +27,8 @@ export default function InFlight() {
   const [, setTick] = useState(0);
   const [showSoundPanel, setShowSoundPanel] = useState(false);
   const [showYtPanel, setShowYtPanel] = useState(false);
+  const [showTodos, setShowTodos] = useState(true);
+  const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
   const [ytErr, setYtErr] = useState('');
 
@@ -239,6 +243,16 @@ export default function InFlight() {
             </div>
           )}
         </div>
+        {/* Todo toggle pill */}
+        <button
+          onClick={() => { setShowSoundPanel(false); setShowYtPanel(false); setShowTodos((v) => !v); }}
+          aria-label="할 일 목록"
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur border border-white/20 text-white text-sm hover:bg-white/15"
+        >
+          <span className="text-base leading-none">📝</span>
+          <span className="hidden sm:inline">할 일{todoCount > 0 && ` (${todoCount})`}</span>
+        </button>
+
         <button
           onClick={handleAbort}
           className="px-4 py-2 rounded-full bg-red-500/20 backdrop-blur border border-red-400/40 text-red-200 text-sm hover:bg-red-500/30"
@@ -246,6 +260,9 @@ export default function InFlight() {
           중단
         </button>
       </div>
+
+      {/* Draggable Todo panel (default visible at takeoff) */}
+      {showTodos && <TodoPanel onClose={() => setShowTodos(false)} />}
     </div>
   );
 }
