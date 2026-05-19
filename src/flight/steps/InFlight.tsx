@@ -82,10 +82,10 @@ export default function InFlight() {
     };
   }, []);
 
-  // Drive the plane + camera at ~10 fps. Matches the FlightMap easeTo
-  // duration so the chase camera in 3rd-person mode glides smoothly.
+  // FlightMap drives plane + camera via its own requestAnimationFrame loop,
+  // so this tick exists only to refresh the HUD (time + distance) at 1 Hz.
   useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 100);
+    const id = window.setInterval(() => setTick((t) => t + 1), 1000);
     return () => clearInterval(id);
   }, []);
 
@@ -97,11 +97,6 @@ export default function InFlight() {
   const hasUserRoute = !!origin && !!destination;
 
   const elapsed = elapsedSeconds(active.flight.startedAt);
-  // progress uses sub-second precision so the chase camera glides smoothly
-  // between ticks (elapsedSeconds is floored to whole seconds → would freeze
-  // the camera for ~1s at a time and look like a 5s jump in long flights).
-  const elapsedMs = Math.max(0, Date.now() - active.flight.startedAt);
-  const progress = Math.max(0, Math.min(1, elapsedMs / (active.flight.plannedSeconds * 1000)));
 
   function handleExpire() {
     audioBus.stop('engine');
@@ -140,7 +135,8 @@ export default function InFlight() {
         <FlightMap
           origin={origin}
           destination={destination}
-          progress={progress}
+          startedAt={active.flight.startedAt}
+          plannedSeconds={active.flight.plannedSeconds}
           mode={viewMode}
           followZoom={followZoom}
           overviewZoom={overviewZoom}

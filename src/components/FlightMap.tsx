@@ -16,7 +16,12 @@ export type MapPoint = {
 type Props = {
   origin: MapPoint | null;
   destination: MapPoint | null;
-  progress: number; // 0..1
+  // Flight clock. The map runs its own requestAnimationFrame loop and reads
+  // current progress from `(Date.now() - startedAt) / (plannedSeconds * 1000)`
+  // every frame, so plane + camera motion stays smooth at any zoom level
+  // regardless of the parent's React tick rate.
+  startedAt: number | null;
+  plannedSeconds: number | null;
   mode: ViewMode;
   followZoom?: number;
   overviewZoom?: number;
@@ -89,12 +94,24 @@ function makeDotEl(color: string): HTMLDivElement {
   return el;
 }
 
-export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, overviewZoom = 3, satellite = false, className }: Props) {
+export default function FlightMap({ origin, destination, startedAt, plannedSeconds, mode, followZoom = 8.5, overviewZoom = 3, satellite = false, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const planeRef = useRef<Marker | null>(null);
   const pathRef = useRef<Position[]>([]);
   const loadedRef = useRef<boolean>(false);
+  // Latest props mirrored into refs so the rAF loop always reads the freshest
+  // values without restarting the animation when they change.
+  const modeRef = useRef(mode);
+  const followZoomRef = useRef(followZoom);
+  const overviewZoomRef = useRef(overviewZoom);
+  const startedAtRef = useRef(startedAt);
+  const plannedSecondsRef = useRef(plannedSeconds);
+  modeRef.current = mode;
+  followZoomRef.current = followZoom;
+  overviewZoomRef.current = overviewZoom;
+  startedAtRef.current = startedAt;
+  plannedSecondsRef.current = plannedSeconds;
 
   // Initialize the map once per (origin, destination) pair.
   useEffect(() => {
@@ -172,60 +189,85 @@ export default function FlightMap({ origin, destination, progress, mode, followZ
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [origin?.code, destination?.code, satellite]);
 
-  // Update plane position + camera every progress / mode tick.
+  // Drive plane + camera at the display's refresh rate (typically 60fps) via
+  // requestAnimationFrame. Reads progress/mode/zoom from refs so prop changes
+  // don't cancel and restart the loop. Uses jumpTo (instant) for the camera
+  // because each frame is already a tiny step — easeTo with queued tweens
+  // was visibly stuttering at high follow-zoom levels.
   useEffect(() => {
-    const map = mapRef.current;
-    const path = pathRef.current;
-    const plane = planeRef.current;
-    if (!map || !loadedRef.current || !plane || path.length === 0) return;
+    let raf = 0;
+    let lastMode: ViewMode | null = null;
+    let lastOverviewZoom = -1;
 
-    // Sub-segment interpolation — picks a point linearly between path[idx]
-    // and path[idx+1] using the fractional part of t. Without this, the
-    // plane would only snap to discrete path nodes, looking like teleports.
-    const t = Math.max(0, Math.min(1, progress));
-    const scaled = t * (path.length - 1);
-    const idx = Math.min(path.length - 1, Math.floor(scaled));
-    const next = Math.min(path.length - 1, idx + 1);
-    const frac = scaled - idx;
-    const a = path[idx];
-    const b = path[next];
-    const pos: [number, number] = [
-      a[0] + frac * (b[0] - a[0]),
-      a[1] + frac * (b[1] - a[1]),
-    ];
-    const bearing = bearingDeg(a, b);
+    function frame() {
+      const map = mapRef.current;
+      const path = pathRef.current;
+      const plane = planeRef.current;
+      if (!map || !loadedRef.current || !plane || path.length === 0) {
+        raf = requestAnimationFrame(frame);
+        return;
+      }
 
-    plane.setLngLat(pos);
-    plane.setRotation(bearing - 90); // SVG plane points east; bearing 0 = north
+      const started = startedAtRef.current;
+      const planned = plannedSecondsRef.current;
+      const t =
+        started && planned
+          ? Math.max(0, Math.min(1, (Date.now() - started) / (planned * 1000)))
+          : 0;
 
-    if (mode === 'follow') {
-      map.easeTo({
-        center: pos,
-        zoom: followZoom,
-        pitch: 72,
-        bearing,
-        duration: 100,
-        easing: (t) => t,
-        essential: true,
-      });
-    } else if (origin && destination) {
-      // Overview: keep the camera centered on the great-circle midpoint at
-      // the user's chosen zoom level. The plane is drawn as a marker on the
-      // map, so it stays visible as it crosses the route.
-      const mid: [number, number] = [
-        (origin.lng + destination.lng) / 2,
-        (origin.lat + destination.lat) / 2,
+      const scaled = t * (path.length - 1);
+      const idx = Math.min(path.length - 1, Math.floor(scaled));
+      const next = Math.min(path.length - 1, idx + 1);
+      const frac = scaled - idx;
+      const a = path[idx];
+      const b = path[next];
+      const pos: [number, number] = [
+        a[0] + frac * (b[0] - a[0]),
+        a[1] + frac * (b[1] - a[1]),
       ];
-      map.easeTo({
-        center: mid,
-        zoom: overviewZoom,
-        pitch: 0,
-        bearing: 0,
-        duration: 400,
-        essential: true,
-      });
+      const bearing = bearingDeg(a, b);
+
+      plane.setLngLat(pos);
+      plane.setRotation(bearing - 90);
+
+      const currentMode = modeRef.current;
+      if (currentMode === 'follow') {
+        map.jumpTo({
+          center: pos,
+          zoom: followZoomRef.current,
+          pitch: 72,
+          bearing,
+        });
+        lastMode = 'follow';
+      } else if (origin && destination) {
+        // Overview camera only needs to move when the user changes zoom or
+        // when mode flips back from follow — pin it once with a brief easeTo
+        // for a nice transition, then skip until something changes.
+        const z = overviewZoomRef.current;
+        if (lastMode !== 'overview' || z !== lastOverviewZoom) {
+          const mid: [number, number] = [
+            (origin.lng + destination.lng) / 2,
+            (origin.lat + destination.lat) / 2,
+          ];
+          map.easeTo({
+            center: mid,
+            zoom: z,
+            pitch: 0,
+            bearing: 0,
+            duration: 400,
+            essential: true,
+          });
+          lastMode = 'overview';
+          lastOverviewZoom = z;
+        }
+      }
+
+      raf = requestAnimationFrame(frame);
     }
-  }, [progress, mode, origin, destination, followZoom, overviewZoom]);
+
+    raf = requestAnimationFrame(frame);
+    return () => cancelAnimationFrame(raf);
+  }, [origin, destination]);
 
   return <div ref={containerRef} className={className} style={{ background: '#000' }} />;
 }
