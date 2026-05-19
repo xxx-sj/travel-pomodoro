@@ -44,6 +44,7 @@ export default function InFlight() {
   const [showTodos, setShowTodos] = useState(true);
   const [viewMode, setViewMode] = useState<ViewMode>('overview');
   const [followZoom, setFollowZoom] = useState(8.5);
+  const [overviewZoom, setOverviewZoom] = useState(3);
   const [satellite, setSatellite] = useState(false);
   const todoCount = useTodoStore((s) => s.todos.filter((t) => !t.done).length);
   const [ytInput, setYtInput] = useState('');
@@ -125,7 +126,11 @@ export default function InFlight() {
     : 0;
   const originLabel = origin?.code ?? '';
   const destLabel = destination?.code ?? '';
-  const remainingKm = Math.max(0, totalKm * (1 - progress));
+  // Distance display uses the whole-second elapsed value so the counter
+  // ticks down once per second (matches the time HUD). The map + camera
+  // still use the higher-precision `progress` so the plane glides smoothly.
+  const displayProgress = Math.max(0, Math.min(1, elapsed / active.flight.plannedSeconds));
+  const remainingKm = Math.max(0, totalKm * (1 - displayProgress));
   const remainingSec = Math.max(0, active.flight.plannedSeconds - elapsed);
 
   return (
@@ -138,6 +143,7 @@ export default function InFlight() {
           progress={progress}
           mode={viewMode}
           followZoom={followZoom}
+          overviewZoom={overviewZoom}
           satellite={satellite}
           className="w-full h-full"
         />
@@ -172,13 +178,13 @@ export default function InFlight() {
         >
           {satellite ? '🛰️ 위성' : '🗺️ 지도'}
         </button>
-        {viewMode === 'follow' && (
+        {viewMode === 'follow' ? (
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
             <span className="opacity-60">줌</span>
             <input
               type="range"
               min={4}
-              max={14}
+              max={18}
               step={0.5}
               value={followZoom}
               onChange={(e) => setFollowZoom(parseFloat(e.target.value))}
@@ -186,6 +192,21 @@ export default function InFlight() {
               aria-label="3인칭 줌"
             />
             <span className="font-mono opacity-70 w-6 text-right">{followZoom.toFixed(1)}</span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/50 backdrop-blur border border-white/15 text-white text-[11px]">
+            <span className="opacity-60">줌</span>
+            <input
+              type="range"
+              min={1}
+              max={8}
+              step={0.5}
+              value={overviewZoom}
+              onChange={(e) => setOverviewZoom(parseFloat(e.target.value))}
+              className="w-24 accent-orange-400"
+              aria-label="전체 항로 줌"
+            />
+            <span className="font-mono opacity-70 w-6 text-right">{overviewZoom.toFixed(1)}</span>
           </div>
         )}
         <button

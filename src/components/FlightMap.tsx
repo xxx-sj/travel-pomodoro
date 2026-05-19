@@ -19,6 +19,7 @@ type Props = {
   progress: number; // 0..1
   mode: ViewMode;
   followZoom?: number;
+  overviewZoom?: number;
   satellite?: boolean;
   className?: string;
 };
@@ -71,9 +72,9 @@ function bearingDeg(from: Position, to: Position): number {
 function makePlaneEl(): HTMLDivElement {
   const el = document.createElement('div');
   el.style.cssText =
-    'width:28px;height:28px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.6))';
+    'width:56px;height:56px;display:flex;align-items:center;justify-content:center;filter:drop-shadow(0 2px 8px rgba(0,0,0,0.65))';
   el.innerHTML = `
-    <svg viewBox="-12 -12 24 24" width="28" height="28">
+    <svg viewBox="-12 -12 24 24" width="56" height="56">
       <circle r="9" fill="#F4A261" opacity="0.18"/>
       <path d="M 8,0 L 2.6,-1 L 0.6,-4.6 L -1.3,-4.6 L -0.6,-1 L -5.3,-1 L -6.6,-2.3 L -8,-2.3 L -7,0 L -8,2.3 L -6.6,2.3 L -5.3,1 L -0.6,1 L -1.3,4.6 L 0.6,4.6 L 2.6,1 Z"
         fill="#F4A261" stroke="#0A1628" stroke-width="0.4" stroke-linejoin="round"/>
@@ -88,7 +89,7 @@ function makeDotEl(color: string): HTMLDivElement {
   return el;
 }
 
-export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, satellite = false, className }: Props) {
+export default function FlightMap({ origin, destination, progress, mode, followZoom = 8.5, overviewZoom = 3, satellite = false, className }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MlMap | null>(null);
   const planeRef = useRef<Marker | null>(null);
@@ -178,21 +179,28 @@ export default function FlightMap({ origin, destination, progress, mode, followZ
     const plane = planeRef.current;
     if (!map || !loadedRef.current || !plane || path.length === 0) return;
 
+    // Sub-segment interpolation — picks a point linearly between path[idx]
+    // and path[idx+1] using the fractional part of t. Without this, the
+    // plane would only snap to discrete path nodes, looking like teleports.
     const t = Math.max(0, Math.min(1, progress));
-    const idx = Math.min(path.length - 1, Math.floor(t * (path.length - 1)));
+    const scaled = t * (path.length - 1);
+    const idx = Math.min(path.length - 1, Math.floor(scaled));
     const next = Math.min(path.length - 1, idx + 1);
-    const pos = path[idx];
-    const bearing = bearingDeg(pos, path[next]);
+    const frac = scaled - idx;
+    const a = path[idx];
+    const b = path[next];
+    const pos: [number, number] = [
+      a[0] + frac * (b[0] - a[0]),
+      a[1] + frac * (b[1] - a[1]),
+    ];
+    const bearing = bearingDeg(a, b);
 
-    plane.setLngLat(pos as [number, number]);
-    plane.setRotation(bearing - 90); // SVG plane points right (east); bearing 0 = north
+    plane.setLngLat(pos);
+    plane.setRotation(bearing - 90); // SVG plane points east; bearing 0 = north
 
     if (mode === 'follow') {
-      // Linear easing + duration matched to the InFlight tick interval lets
-      // consecutive easeTo calls chain into a single smooth motion instead
-      // of stuttering on every tick.
       map.easeTo({
-        center: pos as [number, number],
+        center: pos,
         zoom: followZoom,
         pitch: 72,
         bearing,
@@ -201,13 +209,23 @@ export default function FlightMap({ origin, destination, progress, mode, followZ
         essential: true,
       });
     } else if (origin && destination) {
-      const bounds = new maplibregl.LngLatBounds(
-        [Math.min(origin.lng, destination.lng), Math.min(origin.lat, destination.lat)],
-        [Math.max(origin.lng, destination.lng), Math.max(origin.lat, destination.lat)],
-      );
-      map.fitBounds(bounds, { padding: 80, pitch: 0, bearing: 0, duration: 400, maxZoom: 5 });
+      // Overview: keep the camera centered on the great-circle midpoint at
+      // the user's chosen zoom level. The plane is drawn as a marker on the
+      // map, so it stays visible as it crosses the route.
+      const mid: [number, number] = [
+        (origin.lng + destination.lng) / 2,
+        (origin.lat + destination.lat) / 2,
+      ];
+      map.easeTo({
+        center: mid,
+        zoom: overviewZoom,
+        pitch: 0,
+        bearing: 0,
+        duration: 400,
+        essential: true,
+      });
     }
-  }, [progress, mode, origin, destination, followZoom]);
+  }, [progress, mode, origin, destination, followZoom, overviewZoom]);
 
   return <div ref={containerRef} className={className} style={{ background: '#000' }} />;
 }
