@@ -156,12 +156,16 @@ export default function FlightMap({ origin, destination, progress, mode, classNa
     plane.setRotation(bearing - 90); // SVG plane points right (east); bearing 0 = north
 
     if (mode === 'follow') {
+      // Linear easing + duration matched to the InFlight tick interval lets
+      // consecutive easeTo calls chain into a single smooth motion instead
+      // of stuttering on every tick.
       map.easeTo({
         center: pos as [number, number],
-        zoom: 5.5,
-        pitch: 65,
+        zoom: 8.5,
+        pitch: 72,
         bearing,
-        duration: 400,
+        duration: 100,
+        easing: (t) => t,
         essential: true,
       });
     } else if (origin && destination) {

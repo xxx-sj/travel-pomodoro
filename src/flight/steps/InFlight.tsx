@@ -67,11 +67,10 @@ export default function InFlight() {
     };
   }, []);
 
-  // Drive the plane along the map path. ~5 fps re-renders are plenty smooth
-  // for a flight that lasts many minutes, and avoids burning CPU on a
-  // long-running session.
+  // Drive the plane + camera at ~10 fps. Matches the FlightMap easeTo
+  // duration so the chase camera in 3rd-person mode glides smoothly.
   useEffect(() => {
-    const id = window.setInterval(() => setTick((t) => t + 1), 200);
+    const id = window.setInterval(() => setTick((t) => t + 1), 100);
     return () => clearInterval(id);
   }, []);
 
