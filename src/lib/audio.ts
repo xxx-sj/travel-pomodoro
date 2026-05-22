@@ -23,6 +23,12 @@ export class AudioBus {
   private volume = 0.6;
   private musicVolume = 0.4;
   private musicActive = false;
+  // Tracks the in-flight engine fade-out animation. Without this, a quick
+  // stop → play sequence (e.g. landing → new takeoff, or two stop() calls
+  // from handleExpire + store.land()) would leave a stale setTimeout that
+  // pauses the engine right after we restart it — which manifested as
+  // "재시작할때 가끔 비행기 소리가 멈추는".
+  private engineFadeTimer: number | null = null;
 
   init(): void {
     if (this.ctx) return;
@@ -39,6 +45,16 @@ export class AudioBus {
         const el = new Audio(URLS[id]);
         el.preload = 'auto';
         el.loop = id === 'engine';
+        if (id === 'engine') {
+          // Safety net for browsers / WebAudio paths where `loop` doesn't
+          // re-trigger reliably — restart playback from the top whenever the
+          // engine element fires `ended`. No-op for non-engine sounds.
+          el.addEventListener('ended', () => {
+            if (!el.loop) return;
+            el.currentTime = 0;
+            el.play().catch(() => { /* ignore */ });
+          });
+        }
         const source = this.ctx.createMediaElementSource(el);
         source.connect(this.master);
         this.elements.set(id, el);
@@ -72,29 +88,33 @@ export class AudioBus {
     this.applyEngineDucking();
   }
 
-  private fade(toValue: number, durationMs = 200): void {
-    if (!this.ctx || !this.master) return;
-    const now = this.ctx.currentTime;
-    const g = this.master.gain;
-    g.cancelScheduledValues(now);
-    g.setValueAtTime(g.value, now);
-    g.linearRampToValueAtTime(toValue, now + durationMs / 1000);
-  }
-
   private applyEngineDucking(): void {
     const engine = this.elements.get('engine');
     if (engine) engine.volume = this.musicActive ? ENGINE_AMBIENT_FACTOR : 1.0;
+  }
+
+  private cancelEngineFade(): void {
+    if (this.engineFadeTimer !== null) {
+      clearTimeout(this.engineFadeTimer);
+      this.engineFadeTimer = null;
+    }
+  }
+
+  private engineTargetVolume(): number {
+    return this.musicActive ? ENGINE_AMBIENT_FACTOR : 1.0;
   }
 
   play(id: SoundId): void {
     const el = this.elements.get(id);
     if (!el) return;
     if (id === 'engine') {
-      el.volume = this.musicActive ? ENGINE_AMBIENT_FACTOR : 1.0;
+      // A pending fade-out would pause this element ~200ms after we start
+      // it. Kill it first.
+      this.cancelEngineFade();
+      el.volume = this.engineTargetVolume();
     }
     const start = () => {
       el.currentTime = 0;
-      this.fade(this.volume, 200);
       el.play().catch(() => { /* file missing or blocked */ });
     };
     if (this.ctx && this.ctx.state === 'suspended') {
@@ -108,12 +128,26 @@ export class AudioBus {
     const el = this.elements.get(id);
     if (!el) return;
     if (id === 'engine') {
-      this.fade(0, 200);
-      window.setTimeout(() => {
-        el.pause();
-        el.currentTime = 0;
-        this.fade(this.volume, 200);
-      }, 220);
+      // Fade the engine's *own* volume to 0, then pause. The old impl
+      // faded the master gain instead, which silenced every other sound
+      // (captain announcements, landing roll) for ~200 ms after handleExpire.
+      this.cancelEngineFade();
+      const startVol = el.volume;
+      const startedAt = performance.now();
+      const durationMs = 200;
+      const tick = () => {
+        const t = Math.min(1, (performance.now() - startedAt) / durationMs);
+        el.volume = startVol * (1 - t);
+        if (t < 1) {
+          this.engineFadeTimer = window.setTimeout(tick, 16);
+        } else {
+          el.pause();
+          el.currentTime = 0;
+          el.volume = this.engineTargetVolume();
+          this.engineFadeTimer = null;
+        }
+      };
+      tick();
     } else {
       el.pause();
       el.currentTime = 0;
